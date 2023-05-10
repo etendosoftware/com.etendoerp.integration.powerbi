@@ -37,16 +37,14 @@
         <default/>
         <onCreateDefault/>
       </column>
-      <column name="QUERY" primaryKey="false" required="true" type="VARCHAR" size="4000" autoIncrement="false">
+      <column name="QUERY" primaryKey="false" required="true" type="CLOB" size="4000" autoIncrement="false">
         <default/>
         <onCreateDefault/>
       </column>
-      <foreign-key foreignTable="AD_CLIENT" name="ETPBIC_QUERY_AD_CLIENT">
-        <reference local="AD_CLIENT_ID" foreign="AD_CLIENT_ID"/>
-      </foreign-key>
-      <foreign-key foreignTable="AD_ORG" name="ETPBIC_QUERY_AD_ORG">
-        <reference local="AD_ORG_ID" foreign="AD_ORG_ID"/>
-      </foreign-key>
+      <column name="ISETENDOBASE" primaryKey="false" required="true" type="CHAR" size="1" autoIncrement="false">
+        <default><![CDATA[N]]></default>
+        <onCreateDefault/>
+      </column>
       <check name="ETPBIC_QUERY_ISACTIVE_CHECK"><![CDATA[ISACTIVE IN ('Y', 'N')]]></check>
     </table>
   </database>

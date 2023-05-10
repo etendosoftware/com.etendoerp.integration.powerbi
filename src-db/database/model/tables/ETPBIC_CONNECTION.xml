@@ -37,11 +37,18 @@
         <default/>
         <onCreateDefault/>
       </column>
+      <column name="SMFWHE_DEFINEDWEBHOOK_ID" primaryKey="false" required="false" type="VARCHAR" size="32" autoIncrement="false">
+        <default/>
+        <onCreateDefault/>
+      </column>
       <foreign-key foreignTable="AD_CLIENT" name="ETPBIC_AD_CLIENT_FKEY">
         <reference local="AD_CLIENT_ID" foreign="AD_CLIENT_ID"/>
       </foreign-key>
       <foreign-key foreignTable="AD_ORG" name="ETPBIC_AD_ORG_FKEY">
         <reference local="AD_ORG_ID" foreign="AD_ORG_ID"/>
+      </foreign-key>
+      <foreign-key foreignTable="SMFWHE_DEFINEDWEBHOOK" name="ETPBIC_WEBHOOK_FKEY">
+        <reference local="SMFWHE_DEFINEDWEBHOOK_ID" foreign="SMFWHE_DEFINEDWEBHOOK_ID"/>
       </foreign-key>
       <check name="ETPBIC_CONNECTION_ISACTIVE_C"><![CDATA[ISACTIVE IN ('Y', 'N')]]></check>
     </table>
