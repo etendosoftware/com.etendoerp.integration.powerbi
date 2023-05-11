@@ -23,6 +23,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Properties;
 
 public class CallPythonScript extends DalBaseProcess {
 
@@ -30,35 +31,39 @@ public class CallPythonScript extends DalBaseProcess {
 
     @Override
     protected void doExecute(ProcessBundle bundle) throws Exception {
-        System.out.println("java process running");
+        log.info("java process running");
 
         ProcessLogger logger = bundle.getLogger();
         try {
+            OBContext.setAdminMode(true);
             OBCriteria<PbiConnection> configCrit = OBDal.getInstance().createCriteria(PbiConnection.class);
             configCrit.setMaxResults(1);
             PbiConnection config = (PbiConnection) configCrit.uniqueResult();
 
             String repoPath = config.getRepositoryPath();
 
+            if(config==null) throw new OBException(); // catch will capture
             HashMap<String, String> dbCredentials = new HashMap<>();
 
-            String url = OBPropertiesProvider.getInstance().getOpenbravoProperties().getProperty("context.url", "localhost:8080/etendo");
+            Properties obProperties = OBPropertiesProvider.getInstance().getOpenbravoProperties();
 
-            String bbdd_sid = OBPropertiesProvider.getInstance().getOpenbravoProperties().containsKey("bbdd.readonly.sid")
-                    ? OBPropertiesProvider.getInstance().getOpenbravoProperties().getProperty("bbdd.readonly.sid")
-                    : OBPropertiesProvider.getInstance().getOpenbravoProperties().getProperty("bbdd.sid");
+            String url = obProperties.getProperty("context.url", "localhost:8080/etendo");
 
-            String bbdd_user = OBPropertiesProvider.getInstance().getOpenbravoProperties().containsKey("bbdd.readonly.user")
-                    ? OBPropertiesProvider.getInstance().getOpenbravoProperties().getProperty("bbdd.readonly.user")
-                    : OBPropertiesProvider.getInstance().getOpenbravoProperties().getProperty("bbdd.user");
+            String bbdd_sid = obProperties.containsKey("bbdd.readonly.sid")
+                    ? obProperties.getProperty("bbdd.readonly.sid")
+                    : obProperties.getProperty("bbdd.sid");
 
-            String bbdd_password = OBPropertiesProvider.getInstance().getOpenbravoProperties().containsKey("bbdd.readonly.password")
-                    ? OBPropertiesProvider.getInstance().getOpenbravoProperties().getProperty("bbdd.readonly.password")
-                    : OBPropertiesProvider.getInstance().getOpenbravoProperties().getProperty("bbdd.password");
+            String bbdd_user = obProperties.containsKey("bbdd.readonly.user")
+                    ? obProperties.getProperty("bbdd.readonly.user")
+                    : obProperties.getProperty("bbdd.user");
 
-            String bbdd_url = OBPropertiesProvider.getInstance().getOpenbravoProperties().containsKey("bbdd.readonly.url")
-                    ? OBPropertiesProvider.getInstance().getOpenbravoProperties().getProperty("bbdd.readonly.url")
-                    : OBPropertiesProvider.getInstance().getOpenbravoProperties().getProperty("bbdd.url");
+            String bbdd_password = obProperties.containsKey("bbdd.readonly.password")
+                    ? obProperties.getProperty("bbdd.readonly.password")
+                    : obProperties.getProperty("bbdd.password");
+
+            String bbdd_url = obProperties.containsKey("bbdd.readonly.url")
+                    ? obProperties.getProperty("bbdd.readonly.url")
+                    : obProperties.getProperty("bbdd.url");
 
             String[] parts = bbdd_url.split("://|:");
             String bbdd_host = parts[2];
@@ -80,7 +85,8 @@ public class CallPythonScript extends DalBaseProcess {
         } catch (Exception e) {
             throw new OBException(OBMessageUtils.messageBD("ETPBIC_ExecutePythonError"));
         } finally {
-            System.out.println("java process end");
+            log.info("java process end");
+            OBContext.restorePreviousMode();
         }
 
     }

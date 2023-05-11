@@ -46,5 +46,6 @@
         <onCreateDefault/>
       </column>
       <check name="ETPBIC_QUERY_ISACTIVE_CHECK"><![CDATA[ISACTIVE IN ('Y', 'N')]]></check>
+      <check name="ETPBIC_QUERY_ISETENDOBASE_CH"><![CDATA[ISACTIVE IN ('Y', 'N')]]></check>
     </table>
   </database>
