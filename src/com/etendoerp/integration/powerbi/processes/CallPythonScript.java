@@ -32,6 +32,7 @@ public class CallPythonScript extends DalBaseProcess {
     @Override
     protected void doExecute(ProcessBundle bundle) throws Exception {
         log.info("java process running");
+        final String DEFAULT_URL="localhost:8080/etendo";
 
         ProcessLogger logger = bundle.getLogger();
         try {
@@ -42,12 +43,14 @@ public class CallPythonScript extends DalBaseProcess {
 
             String repoPath = config.getRepositoryPath();
 
-            if(config==null) throw new OBException(); // catch will capture
+            if(config==null) {
+                throw new OBException(OBMessageUtils.messageBD("ETPBIC_NullConfigError")); // catch will capture
+            }
             HashMap<String, String> dbCredentials = new HashMap<>();
 
             Properties obProperties = OBPropertiesProvider.getInstance().getOpenbravoProperties();
 
-            String url = obProperties.getProperty("context.url", "localhost:8080/etendo");
+            String url = obProperties.getProperty("context.url", DEFAULT_URL);
 
             String bbdd_sid = obProperties.containsKey("bbdd.readonly.sid")
                     ? obProperties.getProperty("bbdd.readonly.sid")
@@ -79,26 +82,32 @@ public class CallPythonScript extends DalBaseProcess {
             dataDestCrit.add(Restrictions.eq(PbiDataDestination.PROPERTY_PBICONNECTION, config));
             List<PbiDataDestination> dataDestList = dataDestCrit.list();
             for(PbiDataDestination dataDest : dataDestList){
+                log.debug("calling function to execute script");
                 callPythonScript(repoPath, dataDest.getScriptPath(), dbCredentials, url);
             }
 
-        } catch (Exception e) {
-            throw new OBException(OBMessageUtils.messageBD("ETPBIC_ExecutePythonError"));
-        } finally {
-            log.info("java process end");
+        } catch (OBException e) {
+            throw new OBException(e.getMessage());
+        }catch(Exception e){
+            throw new OBException(e.getMessage());
+        }
+        finally {
+            log.debug("java process end");
             OBContext.restorePreviousMode();
         }
 
     }
 
-    public void callPythonScript(String repositoryPath, String scriptName, HashMap<String, String> dbCredentials, String url){
+    public void callPythonScript(String repositoryPath, String scriptName, HashMap<String, String> dbCredentials, String url) {
 
         // repositoryPath is supposed to be a directory
         repositoryPath = repositoryPath.endsWith("/") ? repositoryPath : repositoryPath + "/";
         scriptName = scriptName.endsWith(".py") ? scriptName : scriptName + ".py";
         String finalScriptPath = repositoryPath + scriptName;
         File file = new File(finalScriptPath);
-        if (!file.exists()) throw new OBException(OBMessageUtils.messageBD("ETPBIC_ScriptNotFound"));
+        if (!file.exists()){
+            throw new OBException(OBMessageUtils.messageBD("ETPBIC_ScriptNotFound"));
+        }
         try{
             ProcessBuilder pb = new ProcessBuilder("python3", finalScriptPath,
                     dbCredentials.get("bbdd_sid"),
@@ -109,6 +118,7 @@ public class CallPythonScript extends DalBaseProcess {
                     url);
             pb.directory(new File(repositoryPath));
             pb.redirectErrorStream(true);
+            log.debug("executing python script: " + scriptName);
             Process p = pb.start();
         } catch(Exception e){
             throw new OBException(OBMessageUtils.messageBD("ETPBIC_ExecutePythonError"));

@@ -19,9 +19,7 @@ public class FillLogWindow extends BaseWebhookService {
             PbiLog log = OBProvider.getInstance().get(PbiLog.class);
             log.setNewOBObject(true);
             log.setClient(OBContext.getOBContext().getCurrentClient());
-            log.setCreatedBy(OBContext.getOBContext().getUser());
             log.setOrganization(OBContext.getOBContext().getCurrentOrganization());
-            log.setUpdatedBy(OBContext.getOBContext().getUser());
             log.setLogType(parameter.get("logtype"));
             log.setMessage(parameter.get("description"));
             OBDal.getInstance().save(log);

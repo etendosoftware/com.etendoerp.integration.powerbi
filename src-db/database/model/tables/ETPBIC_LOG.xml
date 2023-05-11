@@ -41,10 +41,10 @@
         <default/>
         <onCreateDefault/>
       </column>
-      <foreign-key foreignTable="AD_CLIENT" name="ETPBIC_QUERY_AD_CLIENT">
+      <foreign-key foreignTable="AD_CLIENT" name="ETPBIC_LOG_CLIENT_FKEY">
         <reference local="AD_CLIENT_ID" foreign="AD_CLIENT_ID"/>
       </foreign-key>
-      <foreign-key foreignTable="AD_ORG" name="ETPBIC_QUERY_AD_ORG">
+      <foreign-key foreignTable="AD_ORG" name="ETPBIC_LOG_ORG_FKEY">
         <reference local="AD_ORG_ID" foreign="AD_ORG_ID"/>
       </foreign-key>
       <check name="ETPBIC_LOG_ISACTIVE_CHECK"><![CDATA[ISACTIVE IN ('Y', 'N')]]></check>

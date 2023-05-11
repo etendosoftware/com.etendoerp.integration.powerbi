@@ -45,7 +45,13 @@
         <default><![CDATA[N]]></default>
         <onCreateDefault/>
       </column>
+      <foreign-key foreignTable="AD_CLIENT" name="ETPBIC_QUERY_CLIENT_FKEY">
+        <reference local="AD_CLIENT_ID" foreign="AD_CLIENT_ID"/>
+      </foreign-key>
+      <foreign-key foreignTable="AD_ORG" name="ETPBIC_QUERY_ORG_FKEY">
+        <reference local="AD_ORG_ID" foreign="AD_ORG_ID"/>
+      </foreign-key>
       <check name="ETPBIC_QUERY_ISACTIVE_CHECK"><![CDATA[ISACTIVE IN ('Y', 'N')]]></check>
-      <check name="ETPBIC_QUERY_ISETENDOBASE_CH"><![CDATA[ISACTIVE IN ('Y', 'N')]]></check>
+      <check name="ETPBIC_QUERY_ISETENDOBASE_CH"><![CDATA[ISETENDOBASE IN ('Y', 'N')]]></check>
     </table>
   </database>
