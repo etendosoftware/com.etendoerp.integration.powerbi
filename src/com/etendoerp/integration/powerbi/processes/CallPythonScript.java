@@ -41,10 +41,8 @@ public class CallPythonScript extends DalBaseProcess {
         ProcessLogger logger = bundle.getLogger();
         logger.logln("Process started");
         try {
-            Client client = OBContext.getOBContext().getCurrentClient();
             OBContext.setAdminMode(true);
             OBCriteria<BiConnection> configCrit = OBDal.getInstance().createCriteria(BiConnection.class);
-            configCrit.add(Restrictions.eq(BiConnection.PROPERTY_CLIENT, client));
             configCrit.setMaxResults(1);
             BiConnection config = (BiConnection) configCrit.uniqueResult();
 
@@ -52,8 +50,6 @@ public class CallPythonScript extends DalBaseProcess {
                 logger.logln("No config found.");
                 throw new OBException(OBMessageUtils.messageBD("ETPBIC_NullConfigError")); // catch will capture
             }
-
-
 
             String repoPath = config.getRepositoryPath();
 
