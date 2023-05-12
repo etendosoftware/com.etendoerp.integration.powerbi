@@ -142,7 +142,7 @@ public class CallPythonScript extends DalBaseProcess {
             pb.directory(new File(repositoryPath));
             pb.redirectErrorStream(true);
             log.debug("executing python script: " + scriptName);
-            Process p = pb.start();
+            pb.start();
         } catch(Exception e){
             throw new OBException(OBMessageUtils.messageBD("ETPBIC_ExecutePythonError"));
         }
