@@ -1,7 +1,10 @@
 package com.etendoerp.integration.powerbi.processes;
 
-import com.etendoerp.integration.powerbi.data.PbiConnection;
-import com.etendoerp.integration.powerbi.data.PbiDataDestination;
+import com.etendoerp.integration.powerbi.data.BiConnection;
+import com.etendoerp.integration.powerbi.data.BiDataDestination;
+import com.etendoerp.integration.powerbi.data.BiExecutionVariables;
+
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.hibernate.criterion.Restrictions;
 import org.openbravo.base.exception.OBException;
@@ -11,6 +14,7 @@ import org.openbravo.dal.core.OBContext;
 import org.openbravo.dal.service.OBCriteria;
 import org.openbravo.dal.service.OBDal;
 import org.openbravo.erpCommon.utility.OBMessageUtils;
+import org.openbravo.model.ad.system.Client;
 import org.openbravo.scheduling.ProcessBundle;
 import org.openbravo.scheduling.ProcessLogger;
 import org.openbravo.service.db.DalBaseProcess;
@@ -35,60 +39,82 @@ public class CallPythonScript extends DalBaseProcess {
         final String DEFAULT_URL="localhost:8080/etendo";
 
         ProcessLogger logger = bundle.getLogger();
+        logger.logln("Process started");
         try {
+            Client client = OBContext.getOBContext().getCurrentClient();
             OBContext.setAdminMode(true);
-            OBCriteria<PbiConnection> configCrit = OBDal.getInstance().createCriteria(PbiConnection.class);
+            OBCriteria<BiConnection> configCrit = OBDal.getInstance().createCriteria(BiConnection.class);
+            configCrit.add(Restrictions.eq(BiConnection.PROPERTY_CLIENT, client));
             configCrit.setMaxResults(1);
-            PbiConnection config = (PbiConnection) configCrit.uniqueResult();
+            BiConnection config = (BiConnection) configCrit.uniqueResult();
+
+            if(config==null) {
+                logger.logln("No config found.");
+                throw new OBException(OBMessageUtils.messageBD("ETPBIC_NullConfigError")); // catch will capture
+            }
+
+
 
             String repoPath = config.getRepositoryPath();
 
-            if(config==null) {
-                throw new OBException(OBMessageUtils.messageBD("ETPBIC_NullConfigError")); // catch will capture
-            }
             HashMap<String, String> dbCredentials = new HashMap<>();
 
             Properties obProperties = OBPropertiesProvider.getInstance().getOpenbravoProperties();
 
             String url = obProperties.getProperty("context.url", DEFAULT_URL);
 
-            String bbdd_sid = obProperties.containsKey("bbdd.readonly.sid")
+            String bbddSid = obProperties.containsKey("bbdd.readonly.sid")
                     ? obProperties.getProperty("bbdd.readonly.sid")
                     : obProperties.getProperty("bbdd.sid");
 
-            String bbdd_user = obProperties.containsKey("bbdd.readonly.user")
+            String bbddUser = obProperties.containsKey("bbdd.readonly.user")
                     ? obProperties.getProperty("bbdd.readonly.user")
                     : obProperties.getProperty("bbdd.user");
 
-            String bbdd_password = obProperties.containsKey("bbdd.readonly.password")
+            String bbddPassword = obProperties.containsKey("bbdd.readonly.password")
                     ? obProperties.getProperty("bbdd.readonly.password")
                     : obProperties.getProperty("bbdd.password");
 
-            String bbdd_url = obProperties.containsKey("bbdd.readonly.url")
+            String bbddUrl = obProperties.containsKey("bbdd.readonly.url")
                     ? obProperties.getProperty("bbdd.readonly.url")
                     : obProperties.getProperty("bbdd.url");
 
-            String[] parts = bbdd_url.split("://|:");
-            String bbdd_host = parts[2];
-            String bbdd_port = parts[3];
+            String[] parts = bbddUrl.split("://|:");
+            String bbddHost = parts[2];
+            String bbddPort = parts[3];
 
-            dbCredentials.put("bbdd_sid", bbdd_sid);
-            dbCredentials.put("bbdd_user", bbdd_user);
-            dbCredentials.put("bbdd_password", bbdd_password);
-            dbCredentials.put("bbdd_host", bbdd_host);
-            dbCredentials.put("bbdd_port", bbdd_port);
+            dbCredentials.put("bbdd_sid", bbddSid);
+            dbCredentials.put("bbdd_user", bbddUser);
+            dbCredentials.put("bbdd_password", bbddPassword);
+            dbCredentials.put("bbdd_host", bbddHost);
+            dbCredentials.put("bbdd_port", bbddPort);
 
-            OBCriteria<PbiDataDestination> dataDestCrit = OBDal.getInstance().createCriteria(PbiDataDestination.class);
-            dataDestCrit.add(Restrictions.eq(PbiDataDestination.PROPERTY_PBICONNECTION, config));
-            List<PbiDataDestination> dataDestList = dataDestCrit.list();
-            for(PbiDataDestination dataDest : dataDestList){
+            OBCriteria<BiDataDestination> dataDestCrit = OBDal.getInstance().createCriteria(BiDataDestination.class);
+            dataDestCrit.add(Restrictions.eq(BiDataDestination.PROPERTY_BICONNECTION, config));
+            List<BiDataDestination> dataDestList = dataDestCrit.list();
+
+            for(BiDataDestination dataDest : dataDestList){
+                OBCriteria<BiExecutionVariables> execVarCrit = OBDal.getInstance().createCriteria(BiExecutionVariables.class);
+                execVarCrit.add(Restrictions.eq(BiExecutionVariables.PROPERTY_BIDATADESTINATION, dataDest));
+                // at the time we just need "Client" variable
+                execVarCrit.add(Restrictions.eq(BiExecutionVariables.PROPERTY_VARIABLE, "Client"));
+                execVarCrit.setMaxResults(1);
+                BiExecutionVariables clientVariable = (BiExecutionVariables) execVarCrit.uniqueResult();
+                String clientStr = clientVariable.getValue();
+                if(StringUtils.isEmpty(clientStr)){
+                    throw new OBException(OBMessageUtils.messageBD("ETPBIC_NullClientError"));
+                }
+
                 log.debug("calling function to execute script");
-                callPythonScript(repoPath, dataDest.getScriptPath(), dbCredentials, url);
+                logger.logln("executing " + dataDest.getScriptPath());
+                callPythonScript(repoPath, dataDest.getScriptPath(), dbCredentials, url, clientStr);
             }
 
         } catch (OBException e) {
+            logger.logln(e.getMessage());
             throw new OBException(e.getMessage());
         }catch(Exception e){
+            logger.logln(e.getMessage());
             throw new OBException(e.getMessage());
         }
         finally {
@@ -98,7 +124,7 @@ public class CallPythonScript extends DalBaseProcess {
 
     }
 
-    public void callPythonScript(String repositoryPath, String scriptName, HashMap<String, String> dbCredentials, String url) {
+    public void callPythonScript(String repositoryPath, String scriptName, HashMap<String, String> dbCredentials, String url, String client) {
 
         // repositoryPath is supposed to be a directory
         repositoryPath = repositoryPath.endsWith("/") ? repositoryPath : repositoryPath + "/";
@@ -115,7 +141,8 @@ public class CallPythonScript extends DalBaseProcess {
                     dbCredentials.get("bbdd_password"),
                     dbCredentials.get("bbdd_host"),
                     dbCredentials.get("bbdd_port"),
-                    url);
+                    url,
+                    client);
             pb.directory(new File(repositoryPath));
             pb.redirectErrorStream(true);
             log.debug("executing python script: " + scriptName);

@@ -12,10 +12,10 @@ import org.openbravo.base.model.Property;
 import org.openbravo.client.kernel.event.EntityDeleteEvent;
 import org.openbravo.client.kernel.event.EntityPersistenceEventObserver;
 
-import com.etendoerp.integration.powerbi.data.PbiQuery;
+import com.etendoerp.integration.powerbi.data.BiQuery;
 
 class EtendoBaseQueryHandler extends EntityPersistenceEventObserver {
-  private static Entity[] entities = { ModelProvider.getInstance().getEntity(PbiQuery.ENTITY_NAME) };
+  private static Entity[] entities = { ModelProvider.getInstance().getEntity(BiQuery.ENTITY_NAME) };
   private static final Logger logger = LogManager.getLogger();
 
   @Override
@@ -27,7 +27,7 @@ class EtendoBaseQueryHandler extends EntityPersistenceEventObserver {
     if (!isValidEvent(event)) {
       return;
     }
-    Property isEtendoBaseProp = entities[0].getProperty(PbiQuery.PROPERTY_ISETENDOBASE);
+    Property isEtendoBaseProp = entities[0].getProperty(BiQuery.PROPERTY_ISETENDOBASE);
     boolean isEtendoBase = (boolean) event.getCurrentState(isEtendoBaseProp);
     if(isEtendoBase){
       throw new OBException("ETPBIC_CantDeleteEtendoQuery");

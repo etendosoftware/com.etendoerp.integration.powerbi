@@ -1,7 +1,7 @@
 package com.etendoerp.integration.powerbi.processes;
 
 
-import com.etendoerp.integration.powerbi.data.PbiLog;
+import com.etendoerp.integration.powerbi.data.BiLog;
 import com.etendoerp.webhookevents.services.BaseWebhookService;
 import org.openbravo.base.exception.OBException;
 import org.openbravo.base.provider.OBProvider;
@@ -16,7 +16,7 @@ public class FillLogWindow extends BaseWebhookService {
     @Override
     public void get(Map<String, String> parameter, Map<String, String> responseVars){
         try{
-            PbiLog log = OBProvider.getInstance().get(PbiLog.class);
+            BiLog log = OBProvider.getInstance().get(BiLog.class);
             log.setNewOBObject(true);
             log.setClient(OBContext.getOBContext().getCurrentClient());
             log.setOrganization(OBContext.getOBContext().getCurrentOrganization());
