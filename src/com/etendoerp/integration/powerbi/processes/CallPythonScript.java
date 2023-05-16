@@ -36,7 +36,7 @@ public class CallPythonScript extends DalBaseProcess {
     @Override
     protected void doExecute(ProcessBundle bundle) throws Exception {
         log.info("java process running");
-        final String DEFAULT_URL="localhost:8080/etendo";
+        final String DEFAULT_URL = "localhost:8080/etendo";
 
         ProcessLogger logger = bundle.getLogger();
         logger.logln("Process started");
@@ -46,7 +46,7 @@ public class CallPythonScript extends DalBaseProcess {
             configCrit.setMaxResults(1);
             BiConnection config = (BiConnection) configCrit.uniqueResult();
 
-            if(config==null) {
+            if (config == null) {
                 logger.logln("No config found.");
                 throw new OBException(OBMessageUtils.messageBD("ETPBIC_NullConfigError")); // catch will capture
             }
@@ -89,7 +89,7 @@ public class CallPythonScript extends DalBaseProcess {
             dataDestCrit.add(Restrictions.eq(BiDataDestination.PROPERTY_BICONNECTION, config));
             List<BiDataDestination> dataDestList = dataDestCrit.list();
 
-            for(BiDataDestination dataDest : dataDestList){
+            for (BiDataDestination dataDest : dataDestList) {
                 OBCriteria<BiExecutionVariables> execVarCrit = OBDal.getInstance().createCriteria(BiExecutionVariables.class);
                 execVarCrit.add(Restrictions.eq(BiExecutionVariables.PROPERTY_BIDATADESTINATION, dataDest));
                 // at the time we just need "Client" variable
@@ -97,7 +97,7 @@ public class CallPythonScript extends DalBaseProcess {
                 execVarCrit.setMaxResults(1);
                 BiExecutionVariables clientVariable = (BiExecutionVariables) execVarCrit.uniqueResult();
                 String clientStr = clientVariable.getValue();
-                if(StringUtils.isEmpty(clientStr)){
+                if (StringUtils.isEmpty(clientStr)) {
                     throw new OBException(OBMessageUtils.messageBD("ETPBIC_NullClientError"));
                 }
 
@@ -109,11 +109,10 @@ public class CallPythonScript extends DalBaseProcess {
         } catch (OBException e) {
             logger.logln(e.getMessage());
             throw new OBException(e.getMessage());
-        }catch(Exception e){
+        } catch (Exception e) {
             logger.logln(e.getMessage());
             throw new OBException(e.getMessage());
-        }
-        finally {
+        } finally {
             log.debug("java process end");
             OBContext.restorePreviousMode();
         }
@@ -127,10 +126,10 @@ public class CallPythonScript extends DalBaseProcess {
         scriptName = scriptName.endsWith(".py") ? scriptName : scriptName + ".py";
         String finalScriptPath = repositoryPath + scriptName;
         File file = new File(finalScriptPath);
-        if (!file.exists()){
+        if (!file.exists()) {
             throw new OBException(OBMessageUtils.messageBD("ETPBIC_ScriptNotFound"));
         }
-        try{
+        try {
             ProcessBuilder pb = new ProcessBuilder("python3", finalScriptPath,
                     dbCredentials.get("bbdd_sid"),
                     dbCredentials.get("bbdd_user"),
@@ -143,7 +142,7 @@ public class CallPythonScript extends DalBaseProcess {
             pb.redirectErrorStream(true);
             log.debug("executing python script: " + scriptName);
             pb.start();
-        } catch(Exception e){
+        } catch (Exception e) {
             throw new OBException(OBMessageUtils.messageBD("ETPBIC_ExecutePythonError"));
         }
     }
