@@ -36,7 +36,6 @@ public class CallPythonScript extends DalBaseProcess {
     @Override
     protected void doExecute(ProcessBundle bundle) throws Exception {
         log.info("java process running");
-        final String DEFAULT_URL = "localhost:8080/etendo";
 
         ProcessLogger logger = bundle.getLogger();
         logger.logln("Process started");
@@ -57,7 +56,11 @@ public class CallPythonScript extends DalBaseProcess {
 
             Properties obProperties = OBPropertiesProvider.getInstance().getOpenbravoProperties();
 
-            String url = obProperties.getProperty("context.url", DEFAULT_URL);
+            if (!obProperties.containsKey("context.url")) {
+                throw new OBException(OBMessageUtils.messageBD("ETPBIC_ContextUrlNotFound"));
+            }
+
+            String url = obProperties.getProperty("context.url");
 
             String bbddSid = obProperties.containsKey("bbdd.readonly.sid")
                     ? obProperties.getProperty("bbdd.readonly.sid")

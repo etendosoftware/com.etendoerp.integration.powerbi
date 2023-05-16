@@ -14,8 +14,8 @@ import java.util.Map;
 public class FillLogWindow extends BaseWebhookService {
 
     @Override
-    public void get(Map<String, String> parameter, Map<String, String> responseVars){
-        try{
+    public void get(Map<String, String> parameter, Map<String, String> responseVars) {
+        try {
             BiLog log = OBProvider.getInstance().get(BiLog.class);
             log.setNewOBObject(true);
             log.setClient(OBContext.getOBContext().getCurrentClient());
@@ -24,7 +24,7 @@ public class FillLogWindow extends BaseWebhookService {
             log.setMessage(parameter.get("description"));
             OBDal.getInstance().save(log);
             OBDal.getInstance().flush();
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new OBException(OBMessageUtils.messageBD("ETPBIC_LogCreationError"));
         }
 
