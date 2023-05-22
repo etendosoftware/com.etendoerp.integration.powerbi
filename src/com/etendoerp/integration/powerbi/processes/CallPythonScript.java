@@ -88,6 +88,9 @@ public class CallPythonScript extends DalBaseProcess {
             dbCredentials.put("bbdd_host", bbddHost);
             dbCredentials.put("bbdd_port", bbddPort);
 
+            Client client = OBContext.getOBContext().getCurrentClient();
+            String clientId = client.getId();
+
             OBCriteria<BiDataDestination> dataDestCrit = OBDal.getInstance().createCriteria(BiDataDestination.class);
             dataDestCrit.add(Restrictions.eq(BiDataDestination.PROPERTY_BICONNECTION, config));
             List<BiDataDestination> dataDestList = dataDestCrit.list();
@@ -106,7 +109,7 @@ public class CallPythonScript extends DalBaseProcess {
 
                 log.debug("calling function to execute script");
                 logger.logln("executing " + dataDest.getScriptPath());
-                callPythonScript(repoPath, dataDest.getScriptPath(), dbCredentials, url, clientStr);
+                callPythonScript(repoPath, dataDest.getScriptPath(), dbCredentials, url, clientStr, clientId);
             }
 
         } catch (OBException e) {
@@ -122,7 +125,7 @@ public class CallPythonScript extends DalBaseProcess {
 
     }
 
-    public void callPythonScript(String repositoryPath, String scriptName, HashMap<String, String> dbCredentials, String url, String client) {
+    public void callPythonScript(String repositoryPath, String scriptName, HashMap<String, String> dbCredentials, String url, String client, String clientId) {
 
         // repositoryPath is supposed to be a directory
         repositoryPath = repositoryPath.endsWith("/") ? repositoryPath : repositoryPath + "/";
@@ -140,7 +143,8 @@ public class CallPythonScript extends DalBaseProcess {
                     dbCredentials.get("bbdd_host"),
                     dbCredentials.get("bbdd_port"),
                     url,
-                    client);
+                    client,
+                    clientId);
             pb.directory(new File(repositoryPath));
             pb.redirectErrorStream(true);
             log.debug("executing python script: " + scriptName);
