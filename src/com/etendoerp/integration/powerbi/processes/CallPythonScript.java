@@ -93,23 +93,23 @@ public class CallPythonScript extends DalBaseProcess {
                 OBCriteria<BiExecutionVariables> execVarCrit = OBDal.getInstance().createCriteria(BiExecutionVariables.class);
                 execVarCrit.add(Restrictions.eq(BiExecutionVariables.PROPERTY_BIDATADESTINATION, dataDest));
                 List<BiExecutionVariables> execVarList = execVarCrit.list();
-                String filews_user = "";
+                String filewsUser = "";
                 String clientStr = "";
-                for(BiExecutionVariables execVar : execVarList){
-                    if(StringUtils.isNotEmpty(execVar.getVariable()) && StringUtils.equals("client", execVar.getVariable().toLowerCase())){
+                for (BiExecutionVariables execVar : execVarList) {
+                    if (StringUtils.isNotEmpty(execVar.getVariable()) && StringUtils.equals("client", execVar.getVariable().toLowerCase())) {
                         clientStr = execVar.getValue();
-                    } else if (StringUtils.isNotEmpty(execVar.getVariable()) && StringUtils.equals("filews_user", execVar.getVariable().toLowerCase())){
-                        filews_user = execVar.getValue();
+                    } else if (StringUtils.isNotEmpty(execVar.getVariable()) && StringUtils.equals("filews_user", execVar.getVariable().toLowerCase())) {
+                        filewsUser = execVar.getValue();
                     }
                 }
 
-                if (StringUtils.isEmpty(clientStr) || StringUtils.isEmpty(filews_user)) {
+                if (StringUtils.isEmpty(clientStr) || StringUtils.isEmpty(filewsUser)) {
                     throw new OBException(OBMessageUtils.messageBD("ETPBIC_VariablesNotFoundError"));
                 }
 
                 log.debug("calling function to execute script");
                 logger.logln("executing " + dataDest.getScriptPath());
-                callPythonScript(repoPath, dataDest.getScriptPath(), dbCredentials, url, clientStr, filews_user);
+                callPythonScript(repoPath, dataDest.getScriptPath(), dbCredentials, url, clientStr, filewsUser);
             }
 
         } catch (OBException e) {
@@ -125,7 +125,7 @@ public class CallPythonScript extends DalBaseProcess {
 
     }
 
-    public void callPythonScript(String repositoryPath, String scriptName, HashMap<String, String> dbCredentials, String url, String client, String filews_user) {
+    public void callPythonScript(String repositoryPath, String scriptName, HashMap<String, String> dbCredentials, String url, String client, String filewsUser) {
 
         // repositoryPath is supposed to be a directory
         repositoryPath = repositoryPath.endsWith("/") ? repositoryPath : repositoryPath + "/";
@@ -145,7 +145,7 @@ public class CallPythonScript extends DalBaseProcess {
                     url,
                     client,
                     clientObj.getId(),
-                    filews_user);
+                    filewsUser);
             pb.directory(new File(repositoryPath));
             pb.redirectErrorStream(true);
             log.debug("executing python script: " + scriptName);
