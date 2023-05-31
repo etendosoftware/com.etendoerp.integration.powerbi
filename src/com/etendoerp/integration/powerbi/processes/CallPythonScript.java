@@ -13,7 +13,9 @@ import org.openbravo.dal.core.OBContext;
 import org.openbravo.dal.service.OBCriteria;
 import org.openbravo.dal.service.OBDal;
 import org.openbravo.erpCommon.utility.OBMessageUtils;
+import org.openbravo.model.common.enterprise.Organization;
 import org.openbravo.model.ad.system.Client;
+import org.openbravo.model.common.enterprise.OrganizationTree;
 import org.openbravo.scheduling.ProcessBundle;
 import org.openbravo.scheduling.ProcessLogger;
 import org.openbravo.service.db.DalBaseProcess;
@@ -22,6 +24,7 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
+import java.util.TreeMap;
 
 public class CallPythonScript extends DalBaseProcess {
 
@@ -37,19 +40,40 @@ public class CallPythonScript extends DalBaseProcess {
         logger.logln("Process started");
         try {
             OBContext.setAdminMode(true);
-            OBCriteria<BiConnection> configCrit = OBDal.getInstance().createCriteria(BiConnection.class);
-            configCrit.setMaxResults(1);
-            BiConnection config = (BiConnection) configCrit.uniqueResult();
+            Organization contextOrg = OBContext.getOBContext().getCurrentOrganization();
 
+            // This criteria will find all parents that current organization has.
+            OBCriteria<OrganizationTree> orgParentsCrit = OBDal.getInstance().createCriteria(OrganizationTree.class);
+            orgParentsCrit.add(Restrictions.eq(OrganizationTree.PROPERTY_ORGANIZATION, contextOrg));
+            List<OrganizationTree> orgTreeList = orgParentsCrit.list();
+            HashMap<Long, Organization> orgsAndLevel = new HashMap<>(); // get each org with the hierarchy level
+            for (OrganizationTree orgTree : orgTreeList) {
+                Organization org = orgTree.getParentOrganization();
+                Long lvl = orgTree.getLevelno().longValue();
+                orgsAndLevel.put(lvl, org);
+            }
+
+            // having the hashmap, ensure order it by level in ascendant way for config priority
+            TreeMap<Long, Organization> sortedOrgsAndLevel = new TreeMap<>(orgsAndLevel);
+            BiConnection config = null;
+            Organization orgHavingConn = null;
+            for (Organization org : sortedOrgsAndLevel.values()) {
+                OBCriteria<BiConnection> configCrit = OBDal.getInstance().createCriteria(BiConnection.class);
+                configCrit.add(Restrictions.eq(BiConnection.PROPERTY_ORGANIZATION, org));
+                configCrit.setMaxResults(1);
+                config = (BiConnection) configCrit.uniqueResult();
+                if (config != null) {
+                    orgHavingConn = config.getOrganization();
+                    break;
+                }
+            }
             if (config == null) {
-                logger.logln("No config found.");
+                logger.logln("No config found for client/organization.");
                 throw new OBException(OBMessageUtils.messageBD("ETPBIC_NullConfigError")); // catch will capture
             }
 
             String repoPath = config.getRepositoryPath();
-
             HashMap<String, String> dbCredentials = new HashMap<>();
-
             Properties obProperties = OBPropertiesProvider.getInstance().getOpenbravoProperties();
 
             if (!obProperties.containsKey("context.url")) {
@@ -88,6 +112,9 @@ public class CallPythonScript extends DalBaseProcess {
             OBCriteria<BiDataDestination> dataDestCrit = OBDal.getInstance().createCriteria(BiDataDestination.class);
             dataDestCrit.add(Restrictions.eq(BiDataDestination.PROPERTY_BICONNECTION, config));
             List<BiDataDestination> dataDestList = dataDestCrit.list();
+            if (dataDestList.size() == 0) {
+                throw new OBException(OBMessageUtils.messageBD("ETPBIC_NoDataDestError"));
+            }
 
             for (BiDataDestination dataDest : dataDestList) {
                 OBCriteria<BiExecutionVariables> execVarCrit = OBDal.getInstance().createCriteria(BiExecutionVariables.class);
@@ -109,7 +136,7 @@ public class CallPythonScript extends DalBaseProcess {
 
                 log.debug("calling function to execute script");
                 logger.logln("executing " + dataDest.getScriptPath());
-                callPythonScript(repoPath, dataDest.getScriptPath(), dbCredentials, url, clientStr, filewsUser);
+                callPythonScript(repoPath, dataDest.getScriptPath(), dbCredentials, url, clientStr, contextOrg.getId(), orgHavingConn.getId(), filewsUser);
             }
 
         } catch (OBException e) {
@@ -125,7 +152,7 @@ public class CallPythonScript extends DalBaseProcess {
 
     }
 
-    public void callPythonScript(String repositoryPath, String scriptName, HashMap<String, String> dbCredentials, String url, String client, String filewsUser) {
+    public void callPythonScript(String repositoryPath, String scriptName, HashMap<String, String> dbCredentials, String url, String client, String orgId, String connectionOrg, String filewsUser) {
 
         // repositoryPath is supposed to be a directory
         repositoryPath = repositoryPath.endsWith("/") ? repositoryPath : repositoryPath + "/";
@@ -145,6 +172,8 @@ public class CallPythonScript extends DalBaseProcess {
                     url,
                     client,
                     clientObj.getId(),
+                    orgId,
+                    connectionOrg,
                     filewsUser);
             pb.directory(new File(repositoryPath));
             pb.redirectErrorStream(true);
