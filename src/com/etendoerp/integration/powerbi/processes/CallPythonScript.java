@@ -10,6 +10,7 @@ import org.hibernate.criterion.Restrictions;
 import org.openbravo.base.exception.OBException;
 import org.openbravo.base.session.OBPropertiesProvider;
 import org.openbravo.dal.core.OBContext;
+import org.openbravo.dal.security.OrganizationStructureProvider;
 import org.openbravo.dal.service.OBCriteria;
 import org.openbravo.dal.service.OBDal;
 import org.openbravo.erpCommon.utility.OBMessageUtils;
@@ -43,31 +44,20 @@ public class CallPythonScript extends DalBaseProcess {
             Organization contextOrg = OBContext.getOBContext().getCurrentOrganization();
             String argsStr = "";
 
-            // This criteria will find all parents that current organization has.
-            OBCriteria<OrganizationTree> orgParentsCrit = OBDal.getInstance().createCriteria(OrganizationTree.class);
-            orgParentsCrit.add(Restrictions.eq(OrganizationTree.PROPERTY_ORGANIZATION, contextOrg));
-            List<OrganizationTree> orgTreeList = orgParentsCrit.list();
-            HashMap<Long, Organization> orgsAndLevel = new HashMap<>(); // get each org with the hierarchy level
-            for (OrganizationTree orgTree : orgTreeList) {
-                Organization org = orgTree.getParentOrganization();
-                Long lvl = orgTree.getLevelno().longValue();
-                orgsAndLevel.put(lvl, org);
-            }
-
-            // having the hashmap, ensure order it by level in ascendant way for config priority
-            TreeMap<Long, Organization> sortedOrgsAndLevel = new TreeMap<>(orgsAndLevel);
             BiConnection config = null;
-            Organization orgHavingConn = null;
-            for (Organization org : sortedOrgsAndLevel.values()) {
+            OrganizationStructureProvider orgProvider = new OrganizationStructureProvider();
+            Organization orgHavingConn = contextOrg;
+            int parentListCount = orgProvider.getParentList(contextOrg.getId(), true).size();
+            for (int i = 0; i < parentListCount && config == null; i++) {
                 OBCriteria<BiConnection> configCrit = OBDal.getInstance().createCriteria(BiConnection.class);
-                configCrit.add(Restrictions.eq(BiConnection.PROPERTY_ORGANIZATION, org));
+                configCrit.add(Restrictions.eq(BiConnection.PROPERTY_ORGANIZATION, orgHavingConn));
                 configCrit.setMaxResults(1);
                 config = (BiConnection) configCrit.uniqueResult();
-                if (config != null) {
-                    orgHavingConn = config.getOrganization();
-                    break;
+                if (config == null) {
+                    orgHavingConn = orgProvider.getParentOrg(orgHavingConn);
                 }
             }
+
             if (config == null) {
                 logger.logln("No config found for client/organization.");
                 throw new OBException(OBMessageUtils.messageBD("ETPBIC_NullConfigError")); // catch will capture
