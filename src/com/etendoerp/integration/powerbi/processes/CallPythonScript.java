@@ -41,6 +41,7 @@ public class CallPythonScript extends DalBaseProcess {
         try {
             OBContext.setAdminMode(true);
             Organization contextOrg = OBContext.getOBContext().getCurrentOrganization();
+            String argsStr = "";
 
             // This criteria will find all parents that current organization has.
             OBCriteria<OrganizationTree> orgParentsCrit = OBDal.getInstance().createCriteria(OrganizationTree.class);
@@ -102,12 +103,15 @@ public class CallPythonScript extends DalBaseProcess {
             String bbddHost = parts[2];
             String bbddPort = parts[3];
 
-            dbCredentials.put("bbdd_sid", bbddSid);
-            dbCredentials.put("bbdd_user", bbddUser);
-            dbCredentials.put("bbdd_password", bbddPassword);
-            dbCredentials.put("bbdd_host", bbddHost);
-            dbCredentials.put("bbdd_port", bbddPort);
-
+            argsStr += bbddSid + ",";
+            argsStr += bbddUser + ",";
+            argsStr += bbddPassword + ",";
+            argsStr += bbddHost + ",";
+            argsStr += bbddPort + ",";
+            argsStr += url + ",";
+            argsStr += clientObj.getId() + ",";
+            argsStr += contextOrg.getId() + ",";
+            argsStr += orgHavingConn.getId() + ",";
 
             OBCriteria<BiDataDestination> dataDestCrit = OBDal.getInstance().createCriteria(BiDataDestination.class);
             dataDestCrit.add(Restrictions.eq(BiDataDestination.PROPERTY_BICONNECTION, config));
@@ -133,10 +137,12 @@ public class CallPythonScript extends DalBaseProcess {
                 if (StringUtils.isEmpty(clientStr) || StringUtils.isEmpty(filewsUser)) {
                     throw new OBException(OBMessageUtils.messageBD("ETPBIC_VariablesNotFoundError"));
                 }
+                argsStr += clientStr + ",";
+                argsStr += filewsUser + ",";
 
                 log.debug("calling function to execute script");
+                callPythonScript(repoPath, dataDest.getScriptPath(), argsStr);
                 logger.logln("executing " + dataDest.getScriptPath());
-                callPythonScript(repoPath, dataDest.getScriptPath(), dbCredentials, url, clientStr, contextOrg.getId(), orgHavingConn.getId(), filewsUser);
             }
 
         } catch (OBException e) {
@@ -152,7 +158,7 @@ public class CallPythonScript extends DalBaseProcess {
 
     }
 
-    public void callPythonScript(String repositoryPath, String scriptName, HashMap<String, String> dbCredentials, String url, String client, String orgId, String connectionOrg, String filewsUser) {
+    public void callPythonScript(String repositoryPath, String scriptName, String argsStr) {
 
         // repositoryPath is supposed to be a directory
         repositoryPath = repositoryPath.endsWith("/") ? repositoryPath : repositoryPath + "/";
@@ -164,17 +170,7 @@ public class CallPythonScript extends DalBaseProcess {
         }
         try {
             ProcessBuilder pb = new ProcessBuilder("python3", finalScriptPath,
-                    dbCredentials.get("bbdd_sid"),
-                    dbCredentials.get("bbdd_user"),
-                    dbCredentials.get("bbdd_password"),
-                    dbCredentials.get("bbdd_host"),
-                    dbCredentials.get("bbdd_port"),
-                    url,
-                    client,
-                    clientObj.getId(),
-                    orgId,
-                    connectionOrg,
-                    filewsUser);
+                    argsStr);
             pb.directory(new File(repositoryPath));
             pb.redirectErrorStream(true);
             log.debug("executing python script: " + scriptName);
