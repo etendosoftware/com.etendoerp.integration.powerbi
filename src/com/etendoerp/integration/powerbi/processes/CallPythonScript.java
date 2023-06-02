@@ -63,6 +63,8 @@ public class CallPythonScript extends DalBaseProcess {
                 throw new OBException(OBMessageUtils.messageBD("ETPBIC_NullConfigError")); // catch will capture
             }
 
+            String configId = config.getId();
+
             String repoPath = config.getRepositoryPath();
             HashMap<String, String> dbCredentials = new HashMap<>();
             Properties obProperties = OBPropertiesProvider.getInstance().getOpenbravoProperties();
@@ -101,7 +103,7 @@ public class CallPythonScript extends DalBaseProcess {
             argsStr += url + ",";
             argsStr += clientObj.getId() + ",";
             argsStr += contextOrg.getId() + ",";
-            argsStr += orgHavingConn.getId() + ",";
+            argsStr += configId + ",";
 
             OBCriteria<BiDataDestination> dataDestCrit = OBDal.getInstance().createCriteria(BiDataDestination.class);
             dataDestCrit.add(Restrictions.eq(BiDataDestination.PROPERTY_BICONNECTION, config));
