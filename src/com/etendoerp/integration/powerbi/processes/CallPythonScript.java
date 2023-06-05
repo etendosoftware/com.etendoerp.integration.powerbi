@@ -54,7 +54,7 @@ public class CallPythonScript extends DalBaseProcess {
             dwCrit.add(Restrictions.eq(DefinedWebHook.PROPERTY_ID, config.getWebhook().getId()));
             DefinedWebHook dw = (DefinedWebHook) dwCrit.setMaxResults(1).uniqueResult();
 
-            checkWebhookNull(dw == null, "ETPBIC_NoWebhookError");
+            checkNull(dw == null, "ETPBIC_NoWebhookError");
 
             // get webhook access
             OBCriteria<DefinedwebhookAccess> dwaCrit = OBDal.getInstance().createCriteria(DefinedwebhookAccess.class);
@@ -62,12 +62,12 @@ public class CallPythonScript extends DalBaseProcess {
             // suppose to have just 1 dw access active.
             DefinedwebhookAccess dwa = (DefinedwebhookAccess) dwaCrit.setMaxResults(1).uniqueResult();
 
-            checkWebhookAccessNull(dwa == null, "ETPBIC_NoWebhookAccessError");
+            checkNull(dwa == null, "ETPBIC_NoWebhookAccessError");
 
             // get webhook token
             DefinedwebhookToken dwt = dwa.getSmfwheDefinedwebhookToken();
 
-            checkWebhookTokenNull(dwt == null, "ETPBIC_NoWebhookTokenError");
+            checkNull(dwt == null, "ETPBIC_NoWebhookTokenError");
 
             String whName = dw.getName();
             String whToken = dwt.getAPIKey();
@@ -177,19 +177,7 @@ public class CallPythonScript extends DalBaseProcess {
         }
     }
 
-    private static void checkWebhookTokenNull(boolean isNull, String noWebhookTokenErrorMsg) {
-        if (isNull) {
-            throw new OBException(OBMessageUtils.messageBD(noWebhookTokenErrorMsg));
-        }
-    }
-
-    private static void checkWebhookAccessNull(boolean isNull, String noWebhookAccessErrorMsg) {
-        if (isNull) {
-            throw new OBException(OBMessageUtils.messageBD(noWebhookAccessErrorMsg));
-        }
-    }
-
-    private static void checkWebhookNull(boolean isNull, String noWebhookErrorMsg) {
+    private static void checkNull(boolean isNull, String noWebhookErrorMsg) {
         if (isNull) {
             throw new OBException(OBMessageUtils.messageBD(noWebhookErrorMsg));
         }
