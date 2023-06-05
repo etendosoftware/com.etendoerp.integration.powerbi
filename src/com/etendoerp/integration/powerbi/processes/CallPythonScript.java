@@ -44,33 +44,17 @@ public class CallPythonScript extends DalBaseProcess {
             Organization contextOrg = OBContext.getOBContext().getCurrentOrganization();
             StringBuilder argsStr = new StringBuilder();
 
-            BiConnection config = null;
             OrganizationStructureProvider orgProvider = new OrganizationStructureProvider();
             Organization orgHavingConn = contextOrg;
             int parentListCount = orgProvider.getParentList(contextOrg.getId(), true).size();
-            for (int i = 0; i < parentListCount && config == null; i++) {
-                OBCriteria<BiConnection> configCrit = OBDal.getInstance().createCriteria(BiConnection.class);
-                configCrit.add(Restrictions.eq(BiConnection.PROPERTY_ORGANIZATION, orgHavingConn));
-                configCrit.setMaxResults(1);
-                config = (BiConnection) configCrit.uniqueResult();
-                if (config == null) {
-                    orgHavingConn = orgProvider.getParentOrg(orgHavingConn);
-                }
-            }
-
-            if (config == null) {
-                logger.logln("No config found for client/organization.");
-                throw new OBException(OBMessageUtils.messageBD("ETPBIC_NullConfigError")); // catch will capture
-            }
+            BiConnection config = getBiConnection(orgProvider, orgHavingConn, parentListCount, logger);
 
             // get webhook name
             OBCriteria<DefinedWebHook> dwCrit = OBDal.getInstance().createCriteria(DefinedWebHook.class);
             dwCrit.add(Restrictions.eq(DefinedWebHook.PROPERTY_ID, config.getWebhook().getId()));
             DefinedWebHook dw = (DefinedWebHook) dwCrit.setMaxResults(1).uniqueResult();
 
-            if (dw == null) {
-                throw new OBException(OBMessageUtils.messageBD("ETPBIC_NoWebhookError"));
-            }
+            checkWebhookNull(dw == null, "ETPBIC_NoWebhookError");
 
             // get webhook access
             OBCriteria<DefinedwebhookAccess> dwaCrit = OBDal.getInstance().createCriteria(DefinedwebhookAccess.class);
@@ -78,16 +62,12 @@ public class CallPythonScript extends DalBaseProcess {
             // suppose to have just 1 dw access active.
             DefinedwebhookAccess dwa = (DefinedwebhookAccess) dwaCrit.setMaxResults(1).uniqueResult();
 
-            if (dwa == null) {
-                throw new OBException(OBMessageUtils.messageBD("ETPBIC_NoWebhookAccessError"));
-            }
+            checkWebhookAccessNull(dwa == null, "ETPBIC_NoWebhookAccessError");
 
             // get webhook token
             DefinedwebhookToken dwt = dwa.getSmfwheDefinedwebhookToken();
 
-            if (dwt == null) {
-                throw new OBException(OBMessageUtils.messageBD("ETPBIC_NoWebhookTokenError"));
-            }
+            checkWebhookTokenNull(dwt == null, "ETPBIC_NoWebhookTokenError");
 
             String whName = dw.getName();
             String whToken = dwt.getAPIKey();
@@ -95,27 +75,17 @@ public class CallPythonScript extends DalBaseProcess {
             String repoPath = config.getRepositoryPath();
             Properties obProperties = OBPropertiesProvider.getInstance().getOpenbravoProperties();
 
-            if (!obProperties.containsKey("context.url")) {
-                throw new OBException(OBMessageUtils.messageBD("ETPBIC_ContextUrlNotFound"));
-            }
+            checkContextUrlExists(obProperties.containsKey("context.url"), "ETPBIC_ContextUrlNotFound");
 
             String url = obProperties.getProperty("context.url");
 
-            String bbddSid = obProperties.containsKey("bbdd.readonly.sid")
-                    ? obProperties.getProperty("bbdd.readonly.sid")
-                    : obProperties.getProperty("bbdd.sid");
+            String bbddSid = getBbddSid(obProperties);
 
-            String bbddUser = obProperties.containsKey("bbdd.readonly.user")
-                    ? obProperties.getProperty("bbdd.readonly.user")
-                    : obProperties.getProperty("bbdd.user");
+            String bbddUser = getBbddUser(obProperties);
 
-            String bbddPassword = obProperties.containsKey("bbdd.readonly.password")
-                    ? obProperties.getProperty("bbdd.readonly.password")
-                    : obProperties.getProperty("bbdd.password");
+            String bbddPassword = getBbddPassword(obProperties);
 
-            String bbddUrl = obProperties.containsKey("bbdd.readonly.url")
-                    ? obProperties.getProperty("bbdd.readonly.url")
-                    : obProperties.getProperty("bbdd.url");
+            String bbddUrl = getBbddUrl(obProperties);
 
             String[] parts = bbddUrl.split("://|:");
             String bbddHost = parts[2];
@@ -135,7 +105,7 @@ public class CallPythonScript extends DalBaseProcess {
             OBCriteria<BiDataDestination> dataDestCrit = OBDal.getInstance().createCriteria(BiDataDestination.class);
             dataDestCrit.add(Restrictions.eq(BiDataDestination.PROPERTY_BICONNECTION, config));
             List<BiDataDestination> dataDestList = dataDestCrit.list();
-            if (dataDestList.size() == 0) {
+            if (dataDestList.isEmpty()) {
                 throw new OBException(OBMessageUtils.messageBD("ETPBIC_NoDataDestError"));
             }
 
@@ -175,6 +145,72 @@ public class CallPythonScript extends DalBaseProcess {
             OBContext.restorePreviousMode();
         }
 
+    }
+
+    private static String getBbddUrl(Properties obProperties) {
+        return obProperties.containsKey("bbdd.readonly.url")
+                ? obProperties.getProperty("bbdd.readonly.url")
+                : obProperties.getProperty("bbdd.url");
+    }
+
+    private static String getBbddPassword(Properties obProperties) {
+        return obProperties.containsKey("bbdd.readonly.password")
+                ? obProperties.getProperty("bbdd.readonly.password")
+                : obProperties.getProperty("bbdd.password");
+    }
+
+    private static String getBbddUser(Properties obProperties) {
+        return obProperties.containsKey("bbdd.readonly.user")
+                ? obProperties.getProperty("bbdd.readonly.user")
+                : obProperties.getProperty("bbdd.user");
+    }
+
+    private static String getBbddSid(Properties obProperties) {
+        return obProperties.containsKey("bbdd.readonly.sid")
+                ? obProperties.getProperty("bbdd.readonly.sid")
+                : obProperties.getProperty("bbdd.sid");
+    }
+
+    private static void checkContextUrlExists(boolean contextUrlExists, String contextUrlNotFoundMsg) {
+        if (!contextUrlExists) {
+            throw new OBException(OBMessageUtils.messageBD(contextUrlNotFoundMsg));
+        }
+    }
+
+    private static void checkWebhookTokenNull(boolean isNull, String noWebhookTokenErrorMsg) {
+        if (isNull) {
+            throw new OBException(OBMessageUtils.messageBD(noWebhookTokenErrorMsg));
+        }
+    }
+
+    private static void checkWebhookAccessNull(boolean isNull, String noWebhookAccessErrorMsg) {
+        if (isNull) {
+            throw new OBException(OBMessageUtils.messageBD(noWebhookAccessErrorMsg));
+        }
+    }
+
+    private static void checkWebhookNull(boolean isNull, String noWebhookErrorMsg) {
+        if (isNull) {
+            throw new OBException(OBMessageUtils.messageBD(noWebhookErrorMsg));
+        }
+    }
+
+    private static BiConnection getBiConnection(OrganizationStructureProvider orgProvider, Organization orgHavingConn, int parentListCount, ProcessLogger logger) {
+        BiConnection conf = null;
+        for (int i = 0; i < parentListCount && conf == null; i++) {
+            OBCriteria<BiConnection> configCrit = OBDal.getInstance().createCriteria(BiConnection.class);
+            configCrit.add(Restrictions.eq(BiConnection.PROPERTY_ORGANIZATION, orgHavingConn));
+            configCrit.setMaxResults(1);
+            conf = (BiConnection) configCrit.uniqueResult();
+            if (conf == null) {
+                orgHavingConn = orgProvider.getParentOrg(orgHavingConn);
+            }
+        }
+        if (conf == null) {
+            logger.logln("No config found for client/organization.");
+            throw new OBException(OBMessageUtils.messageBD("ETPBIC_NullConfigError")); // catch will capture
+        }
+        return conf;
     }
 
     public void callPythonScript(String repositoryPath, String scriptName, String argsStr) {
