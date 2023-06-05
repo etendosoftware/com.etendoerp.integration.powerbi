@@ -4,6 +4,9 @@ import com.etendoerp.integration.powerbi.data.BiConnection;
 import com.etendoerp.integration.powerbi.data.BiDataDestination;
 import com.etendoerp.integration.powerbi.data.BiExecutionVariables;
 
+import com.etendoerp.webhookevents.data.DefinedWebHook;
+import com.etendoerp.webhookevents.data.DefinedwebhookAccess;
+import com.etendoerp.webhookevents.data.DefinedwebhookToken;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.hibernate.criterion.Restrictions;
@@ -16,16 +19,13 @@ import org.openbravo.dal.service.OBDal;
 import org.openbravo.erpCommon.utility.OBMessageUtils;
 import org.openbravo.model.common.enterprise.Organization;
 import org.openbravo.model.ad.system.Client;
-import org.openbravo.model.common.enterprise.OrganizationTree;
 import org.openbravo.scheduling.ProcessBundle;
 import org.openbravo.scheduling.ProcessLogger;
 import org.openbravo.service.db.DalBaseProcess;
 
 import java.io.File;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
-import java.util.TreeMap;
 
 public class CallPythonScript extends DalBaseProcess {
 
@@ -42,7 +42,7 @@ public class CallPythonScript extends DalBaseProcess {
         try {
             OBContext.setAdminMode(true);
             Organization contextOrg = OBContext.getOBContext().getCurrentOrganization();
-            String argsStr = "";
+            StringBuilder argsStr = new StringBuilder();
 
             BiConnection config = null;
             OrganizationStructureProvider orgProvider = new OrganizationStructureProvider();
@@ -63,10 +63,36 @@ public class CallPythonScript extends DalBaseProcess {
                 throw new OBException(OBMessageUtils.messageBD("ETPBIC_NullConfigError")); // catch will capture
             }
 
-            String configId = config.getId();
+            // get webhook name
+            OBCriteria<DefinedWebHook> dwCrit = OBDal.getInstance().createCriteria(DefinedWebHook.class);
+            dwCrit.add(Restrictions.eq(DefinedWebHook.PROPERTY_ID, config.getWebhook().getId()));
+            DefinedWebHook dw = (DefinedWebHook) dwCrit.setMaxResults(1).uniqueResult();
+
+            if (dw == null) {
+                throw new OBException(OBMessageUtils.messageBD("ETPBIC_NoWebhookError"));
+            }
+
+            // get webhook access
+            OBCriteria<DefinedwebhookAccess> dwaCrit = OBDal.getInstance().createCriteria(DefinedwebhookAccess.class);
+            dwaCrit.add(Restrictions.eq(DefinedwebhookAccess.PROPERTY_SMFWHEDEFINEDWEBHOOK, dw));
+            // suppose to have just 1 dw access active.
+            DefinedwebhookAccess dwa = (DefinedwebhookAccess) dwaCrit.setMaxResults(1).uniqueResult();
+
+            if (dwa == null) {
+                throw new OBException(OBMessageUtils.messageBD("ETPBIC_NoWebhookAccessError"));
+            }
+
+            // get webhook token
+            DefinedwebhookToken dwt = dwa.getSmfwheDefinedwebhookToken();
+
+            if (dwt == null) {
+                throw new OBException(OBMessageUtils.messageBD("ETPBIC_NoWebhookTokenError"));
+            }
+
+            String whName = dw.getName();
+            String whToken = dwt.getAPIKey();
 
             String repoPath = config.getRepositoryPath();
-            HashMap<String, String> dbCredentials = new HashMap<>();
             Properties obProperties = OBPropertiesProvider.getInstance().getOpenbravoProperties();
 
             if (!obProperties.containsKey("context.url")) {
@@ -95,15 +121,16 @@ public class CallPythonScript extends DalBaseProcess {
             String bbddHost = parts[2];
             String bbddPort = parts[3];
 
-            argsStr += bbddSid + ",";
-            argsStr += bbddUser + ",";
-            argsStr += bbddPassword + ",";
-            argsStr += bbddHost + ",";
-            argsStr += bbddPort + ",";
-            argsStr += url + ",";
-            argsStr += clientObj.getId() + ",";
-            argsStr += contextOrg.getId() + ",";
-            argsStr += configId + ",";
+            argsStr.append(bbddSid + ",");
+            argsStr.append(bbddUser + ",");
+            argsStr.append(bbddPassword + ",");
+            argsStr.append(bbddHost + ",");
+            argsStr.append(bbddPort + ",");
+            argsStr.append(url + ",");
+            argsStr.append(clientObj.getId() + ",");
+            argsStr.append(contextOrg.getId() + ",");
+            argsStr.append(whName + ",");
+            argsStr.append(whToken + ",");
 
             OBCriteria<BiDataDestination> dataDestCrit = OBDal.getInstance().createCriteria(BiDataDestination.class);
             dataDestCrit.add(Restrictions.eq(BiDataDestination.PROPERTY_BICONNECTION, config));
@@ -129,11 +156,11 @@ public class CallPythonScript extends DalBaseProcess {
                 if (StringUtils.isEmpty(clientStr) || StringUtils.isEmpty(filewsUser)) {
                     throw new OBException(OBMessageUtils.messageBD("ETPBIC_VariablesNotFoundError"));
                 }
-                argsStr += clientStr + ",";
-                argsStr += filewsUser + ",";
+                argsStr.append(clientStr + ",");
+                argsStr.append(filewsUser + ",");
 
                 log.debug("calling function to execute script");
-                callPythonScript(repoPath, dataDest.getScriptPath(), argsStr);
+                callPythonScript(repoPath, dataDest.getScriptPath(), argsStr.toString());
                 logger.logln("executing " + dataDest.getScriptPath());
             }
 
