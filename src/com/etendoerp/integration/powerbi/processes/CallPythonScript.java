@@ -81,10 +81,6 @@ public class CallPythonScript extends DalBaseProcess {
 
             String bbddSid = getBbddSid(obProperties);
 
-            String bbddUser = getBbddUser(obProperties);
-
-            String bbddPassword = getBbddPassword(obProperties);
-
             String bbddUrl = getBbddUrl(obProperties);
 
             String[] parts = bbddUrl.split("://|:");
@@ -92,8 +88,6 @@ public class CallPythonScript extends DalBaseProcess {
             String bbddPort = parts[3];
 
             argsStr.append(bbddSid + ",");
-            argsStr.append(bbddUser + ",");
-            argsStr.append(bbddPassword + ",");
             argsStr.append(bbddHost + ",");
             argsStr.append(bbddPort + ",");
             argsStr.append(url + ",");
@@ -105,29 +99,69 @@ public class CallPythonScript extends DalBaseProcess {
             OBCriteria<BiDataDestination> dataDestCrit = OBDal.getInstance().createCriteria(BiDataDestination.class);
             dataDestCrit.add(Restrictions.eq(BiDataDestination.PROPERTY_BICONNECTION, config));
             List<BiDataDestination> dataDestList = dataDestCrit.list();
-            if (dataDestList.isEmpty()) {
-                throw new OBException(OBMessageUtils.messageBD("ETPBIC_NoDataDestError"));
-            }
+
+            checkNull(dataDestList.isEmpty(), "ETPBIC_NoDataDestError");
 
             for (BiDataDestination dataDest : dataDestList) {
                 OBCriteria<BiExecutionVariables> execVarCrit = OBDal.getInstance().createCriteria(BiExecutionVariables.class);
                 execVarCrit.add(Restrictions.eq(BiExecutionVariables.PROPERTY_BIDATADESTINATION, dataDest));
                 List<BiExecutionVariables> execVarList = execVarCrit.list();
-                String filewsUser = "";
+                String user = "";
                 String clientStr = "";
+                String ip = "";
+                String port = "";
+                String path = "";
+                String bbddUser = "";
+                String bbddPassword = "";
+
                 for (BiExecutionVariables execVar : execVarList) {
-                    if (StringUtils.isNotEmpty(execVar.getVariable()) && StringUtils.equals("client", execVar.getVariable().toLowerCase())) {
-                        clientStr = execVar.getValue();
-                    } else if (StringUtils.isNotEmpty(execVar.getVariable()) && StringUtils.equals("filews_user", execVar.getVariable().toLowerCase())) {
-                        filewsUser = execVar.getValue();
+                    switch (execVar.getVariable().toLowerCase()) {
+                        case "client":
+                            clientStr = execVar.getValue();
+                            break;
+                        case "user":
+                            user = execVar.getValue();
+                            break;
+                        case "ip":
+                            ip = execVar.getValue();
+                            break;
+                        case "port":
+                            port = execVar.getValue();
+                            break;
+                        case "path":
+                            path = execVar.getValue();
+                            break;
+                        case "bbdd_user":
+                            bbddUser = execVar.getValue();
+                            break;
+                        case "bbdd_password":
+                            bbddPassword = execVar.getValue();
+                            break;
+                        default:
+                            break;
                     }
                 }
 
-                if (StringUtils.isEmpty(clientStr) || StringUtils.isEmpty(filewsUser)) {
+                if (StringUtils.isEmpty(clientStr) || StringUtils.isEmpty(user) || StringUtils.isEmpty(ip)) {
                     throw new OBException(OBMessageUtils.messageBD("ETPBIC_VariablesNotFoundError"));
                 }
+
+                if (StringUtils.isEmpty(bbddPassword) || StringUtils.isEmpty(bbddUser)) {
+                    logger.logln("bbdd_user or bbdd_password variables not found. getting from openbravo.properties");
+                    bbddPassword = getBbddPassword(obProperties);
+                    bbddUser = getBbddUser(obProperties);
+                }
+
+                port = resolveEmptyPort(port);
+                path = resolvePathDelimiter(path);
+
                 argsStr.append(clientStr + ",");
-                argsStr.append(filewsUser + ",");
+                argsStr.append(user + ",");
+                argsStr.append(ip + ",");
+                argsStr.append(port + ",");
+                argsStr.append(path + ",");
+                argsStr.append(bbddUser + ",");
+                argsStr.append(bbddPassword + ",");
 
                 log.debug("calling function to execute script");
                 callPythonScript(repoPath, dataDest.getScriptPath(), argsStr.toString());
@@ -145,6 +179,20 @@ public class CallPythonScript extends DalBaseProcess {
             OBContext.restorePreviousMode();
         }
 
+    }
+
+    private static String resolvePathDelimiter(String path) {
+        if (!path.endsWith("/")) {
+            path += "/";
+        }
+        return path;
+    }
+
+    private static String resolveEmptyPort(String port) {
+        if (StringUtils.isEmpty(port)) {
+            port = "22";
+        }
+        return port;
     }
 
     private static String getBbddUrl(Properties obProperties) {
