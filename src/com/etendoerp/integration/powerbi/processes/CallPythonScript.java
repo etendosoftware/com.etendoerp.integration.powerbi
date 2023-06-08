@@ -95,6 +95,7 @@ public class CallPythonScript extends DalBaseProcess {
             argsStr.append(contextOrg.getId() + ",");
             argsStr.append(whName + ",");
             argsStr.append(whToken + ",");
+            argsStr.append(contextOrg.getName().replace(',', '_') + ",");
 
             OBCriteria<BiDataDestination> dataDestCrit = OBDal.getInstance().createCriteria(BiDataDestination.class);
             dataDestCrit.add(Restrictions.eq(BiDataDestination.PROPERTY_BICONNECTION, config));
@@ -155,7 +156,7 @@ public class CallPythonScript extends DalBaseProcess {
                 port = resolveEmptyPort(port);
                 path = resolvePathDelimiter(path);
 
-                argsStr.append(clientStr + ",");
+                argsStr.append(clientStr.replace(',', '_') + ",");
                 argsStr.append(user + ",");
                 argsStr.append(ip + ",");
                 argsStr.append(port + ",");
@@ -178,7 +179,6 @@ public class CallPythonScript extends DalBaseProcess {
             log.debug("java process end");
             OBContext.restorePreviousMode();
         }
-
     }
 
     private static String resolvePathDelimiter(String path) {
