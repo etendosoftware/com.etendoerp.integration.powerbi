@@ -12,6 +12,7 @@ import org.apache.log4j.Logger;
 import org.hibernate.criterion.Restrictions;
 import org.openbravo.base.exception.OBException;
 import org.openbravo.base.session.OBPropertiesProvider;
+import org.openbravo.dal.core.DalContextListener;
 import org.openbravo.dal.core.OBContext;
 import org.openbravo.dal.security.OrganizationStructureProvider;
 import org.openbravo.dal.service.OBCriteria;
@@ -250,11 +251,13 @@ public class CallPythonScript extends DalBaseProcess {
     }
 
     public void callPythonScript(String repositoryPath, String scriptName, String argsStr) {
-
         // repositoryPath is supposed to be a directory
         repositoryPath = repositoryPath.endsWith("/") ? repositoryPath : repositoryPath + "/";
+        repositoryPath = repositoryPath.replace("@basedesign@", ""); // remove @basedesign@
         scriptName = scriptName.endsWith(".py") ? scriptName : scriptName + ".py";
-        String finalScriptPath = repositoryPath + scriptName;
+        String partialScriptPath = repositoryPath + scriptName;
+        String finalScriptPath = getWebContentPath(partialScriptPath);
+
         File file = new File(finalScriptPath);
         if (!file.exists()) {
             throw new OBException(OBMessageUtils.messageBD("ETPBIC_ScriptNotFound"));
@@ -262,13 +265,17 @@ public class CallPythonScript extends DalBaseProcess {
         try {
             ProcessBuilder pb = new ProcessBuilder("python3", finalScriptPath,
                     argsStr);
-            pb.directory(new File(repositoryPath));
+            pb.directory(new File(getWebContentPath(repositoryPath)));
             pb.redirectErrorStream(true);
             log.debug("executing python script: " + scriptName);
             pb.start();
         } catch (Exception e) {
             throw new OBException(OBMessageUtils.messageBD("ETPBIC_ExecutePythonError"));
         }
+    }
+
+    public String getWebContentPath(String pathToScript){
+        return DalContextListener.getServletContext().getRealPath(pathToScript);
     }
 
 }
