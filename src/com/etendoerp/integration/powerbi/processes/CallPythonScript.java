@@ -252,11 +252,13 @@ public class CallPythonScript extends DalBaseProcess {
 
     public void callPythonScript(String repositoryPath, String scriptName, String argsStr) {
         // repositoryPath is supposed to be a directory
-        String concatFormat = "%s%s";
-        repositoryPath = repositoryPath.endsWith("/") ? repositoryPath : String.format(concatFormat, repositoryPath, "/");
-        scriptName = scriptName.endsWith(".py") ? scriptName : String.format(concatFormat, scriptName, ".py");
-        String partialScriptPath = String.format(concatFormat, repositoryPath, scriptName);
-        String finalScriptPath = getWebContentPath(partialScriptPath);
+        StringBuilder repoPath = new StringBuilder(repositoryPath);
+        StringBuilder scriptPath = new StringBuilder(scriptName);
+        StringBuilder partialScriptPath = new StringBuilder();
+        repoPath = repoPath.toString().endsWith("/") ? repoPath : repoPath.append("/");
+        scriptPath = scriptPath.toString().endsWith(".py") ? scriptPath : scriptPath.append(".py");
+        partialScriptPath.append(repoPath).append(scriptPath);
+        String finalScriptPath = getWebContentPath(partialScriptPath.toString());
 
         File file = new File(finalScriptPath);
         if (!file.exists()) {
@@ -265,7 +267,7 @@ public class CallPythonScript extends DalBaseProcess {
         try {
             ProcessBuilder pb = new ProcessBuilder("python3", finalScriptPath,
                     argsStr);
-            pb.directory(new File(getWebContentPath(repositoryPath)));
+            pb.directory(new File(getWebContentPath(repoPath.toString())));
             pb.redirectErrorStream(true);
             log.debug("executing python script: " + scriptName);
             pb.start();
