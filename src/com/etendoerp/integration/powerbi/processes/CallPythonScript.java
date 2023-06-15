@@ -252,10 +252,10 @@ public class CallPythonScript extends DalBaseProcess {
 
     public void callPythonScript(String repositoryPath, String scriptName, String argsStr) {
         // repositoryPath is supposed to be a directory
-        repositoryPath = repositoryPath.endsWith("/") ? repositoryPath : repositoryPath + "/";
-        repositoryPath = repositoryPath.replace("@basedesign@", ""); // remove @basedesign@
-        scriptName = scriptName.endsWith(".py") ? scriptName : scriptName + ".py";
-        String partialScriptPath = repositoryPath + scriptName;
+        String concatFormat = "%s%s";
+        repositoryPath = repositoryPath.endsWith("/") ? repositoryPath : String.format(concatFormat, repositoryPath, "/");
+        scriptName = scriptName.endsWith(".py") ? scriptName : String.format(concatFormat, scriptName, ".py");
+        String partialScriptPath = String.format(concatFormat, repositoryPath, scriptName);
         String finalScriptPath = getWebContentPath(partialScriptPath);
 
         File file = new File(finalScriptPath);
