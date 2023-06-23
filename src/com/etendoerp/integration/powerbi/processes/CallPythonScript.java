@@ -115,6 +115,7 @@ public class CallPythonScript extends DalBaseProcess {
                 String path = "";
                 String bbddUser = "";
                 String bbddPassword = "";
+                String privateKeyPath = "";
 
                 for (BiExecutionVariables execVar : execVarList) {
                     switch (execVar.getVariable().toLowerCase()) {
@@ -138,6 +139,9 @@ public class CallPythonScript extends DalBaseProcess {
                             break;
                         case "bbdd_password":
                             bbddPassword = execVar.getValue();
+                            break;
+                        case "private-key-path":
+                            privateKeyPath = execVar.getValue();
                             break;
                         default:
                             break;
@@ -164,6 +168,7 @@ public class CallPythonScript extends DalBaseProcess {
                 argsStr.append(path + ",");
                 argsStr.append(bbddUser + ",");
                 argsStr.append(bbddPassword + ",");
+                argsStr.append(privateKeyPath + ",");
 
                 log.debug("calling function to execute script");
                 callPythonScript(repoPath, dataDest.getScriptPath(), argsStr.toString());
