@@ -158,7 +158,7 @@ try:
 
 
     # Check if PATH exists in the server
-    PATH_VERIFICATION = f'ssh -i {PRIVATE_KEY_PATH} {USER}@{IP} -p {PORT} "test -d \'{PATH}\' && echo 1"'
+    PATH_VERIFICATION = f'ssh -i {PRIVATE_KEY_PATH} -o StrictHostKeyChecking=no {USER}@{IP} -p {PORT} "test -d \'{PATH}\' && echo 1"'
     VERIFICATION_RESULT = subprocess.run(PATH_VERIFICATION, shell=True, capture_output=True)
     VERIFICATION_OUTPUT = VERIFICATION_RESULT.stdout.strip().decode()
     
@@ -169,13 +169,13 @@ try:
         raise Exception(f"{PATH} does not exist in the server")
     
     # Create client and org directories if not exists
-    PATH_CREATION = f'ssh -i {PRIVATE_KEY_PATH} {USER}@{IP} -p {PORT} "test -d {PATH}{client}/{org_name} && echo 1"'
+    PATH_CREATION = f'ssh -i {PRIVATE_KEY_PATH} -o StrictHostKeyChecking=no {USER}@{IP} -p {PORT} "test -d {PATH}{client}/{org_name} && echo 1"'
     PATH_CREATION_RESULT = subprocess.run(PATH_CREATION, shell=True, capture_output=True)
     PATH_CREATION_OUTPUT = PATH_CREATION_RESULT.stdout.strip().decode()
 
     
     if PATH_CREATION_OUTPUT != "1":
-        CREATE_PATH = f'ssh -i {PRIVATE_KEY_PATH} {USER}@{IP} -p {PORT} "mkdir -p {PATH}{client}/{org_name}"'
+        CREATE_PATH = f'ssh -i {PRIVATE_KEY_PATH} -o StrictHostKeyChecking=no {USER}@{IP} -p {PORT} "mkdir -p {PATH}{client}/{org_name}"'
         subprocess.run(CREATE_PATH, shell=True, capture_output=True)
         LOGGER.debug(f"created {PATH}{client}/{org_name} in the server")
 
@@ -184,7 +184,7 @@ try:
     filesAmt = len(os.listdir(TMP_DIR))
     LOGGER.debug(f"sending {filesAmt} files to cloud for client {client} to {IP}")
     DST = f'{USER}@{IP}:{PATH}{client}/{org_name}/' 
-    OPTIONS = f'-av {"--delete" if filesAmt > 0 else ""} -e "ssh -p {PORT} -i {PRIVATE_KEY_PATH}"' # do not delete if no files being uploaded
+    OPTIONS = f'-av {"--delete" if filesAmt > 0 else ""} -e "ssh -p {PORT} -i {PRIVATE_KEY_PATH} -o StrictHostKeyChecking=no"' # do not delete if no files being uploaded
     COMMAND = f'rsync {OPTIONS} {TMP_DIR}/ {DST} >> "{LOG_DIR}/rsync_$(date +%Y-%m-%d).log" 2>&1'
     LOGGER.debug("executing rsync")
     subprocess.run(COMMAND, shell=True, check=True)
