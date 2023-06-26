@@ -148,7 +148,7 @@ public class CallPythonScript extends DalBaseProcess {
                     }
                 }
 
-                if (StringUtils.isEmpty(clientStr) || StringUtils.isEmpty(user) || StringUtils.isEmpty(ip)) {
+                if (StringUtils.isEmpty(clientStr) || StringUtils.isEmpty(user) || StringUtils.isEmpty(ip) || StringUtils.isEmpty(privateKeyPath)){
                     throw new OBException(OBMessageUtils.messageBD("ETPBIC_VariablesNotFoundError"));
                 }
 
