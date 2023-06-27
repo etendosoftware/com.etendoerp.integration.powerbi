@@ -33,6 +33,7 @@ CLIENT_PREFIX = client[:3]
 CLIENT_FILTER = 'ad_client_id as clientid'
 ORG_FILTER = 'ad_org_id as orgid'
 
+
 # replace spaces and & in for folder creation
 org_name = org_name.replace(" ", "_")
 org_name = org_name.replace("&", "+")
@@ -155,10 +156,20 @@ try:
 
         PREFIX = CLIENT_PREFIX + "_" if (isetendobase == 'N') else "EBI_"
         df1.to_csv(os.path.join(TMP_DIR, PREFIX + f'{name}.csv'), index = False)
+        
+    # Test server connection
+    TEST_COMMAND = f'ssh {"-i" if PRIVATE_KEY_PATH != "" else ""} {PRIVATE_KEY_PATH} -o StrictHostKeyChecking=no {USER}@{IP} -p {PORT} "echo 1"'
+    TEST_RESULT = subprocess.run(TEST_COMMAND, shell=True, capture_output=True)
+    TEST_OUTPUT = TEST_RESULT.stdout.strip().decode()
+    if TEST_OUTPUT == "1":
+        LOGGER.debug(f'{IP} is reachable')
+    else:
+        LOGGER.debug(f'{IP} is not reachable')
+        raise Exception(f'{IP} is not reachable')
 
 
     # Check if PATH exists in the server
-    PATH_VERIFICATION = f'ssh -i {PRIVATE_KEY_PATH} -o StrictHostKeyChecking=no {USER}@{IP} -p {PORT} "test -d \'{PATH}\' && echo 1"'
+    PATH_VERIFICATION = f'ssh {"-i" if PRIVATE_KEY_PATH != "" else ""} {PRIVATE_KEY_PATH} -o StrictHostKeyChecking=no {USER}@{IP} -p {PORT} "test -d \'{PATH}\' && echo 1"'
     VERIFICATION_RESULT = subprocess.run(PATH_VERIFICATION, shell=True, capture_output=True)
     VERIFICATION_OUTPUT = VERIFICATION_RESULT.stdout.strip().decode()
     
@@ -169,30 +180,31 @@ try:
         raise Exception(f"{PATH} does not exist in the server")
     
     # Create client and org directories if not exists
-    PATH_CREATION = f'ssh -i {PRIVATE_KEY_PATH} -o StrictHostKeyChecking=no {USER}@{IP} -p {PORT} "test -d {PATH}{client}/{org_name} && echo 1"'
+    PATH_CREATION = f'ssh {"-i" if PRIVATE_KEY_PATH != "" else ""} {PRIVATE_KEY_PATH} -o StrictHostKeyChecking=no {USER}@{IP} -p {PORT} "test -d {PATH}{client}/{org_name} && echo 1"'
     PATH_CREATION_RESULT = subprocess.run(PATH_CREATION, shell=True, capture_output=True)
     PATH_CREATION_OUTPUT = PATH_CREATION_RESULT.stdout.strip().decode()
 
     
     if PATH_CREATION_OUTPUT != "1":
-        CREATE_PATH = f'ssh -i {PRIVATE_KEY_PATH} -o StrictHostKeyChecking=no {USER}@{IP} -p {PORT} "mkdir -p {PATH}{client}/{org_name}"'
+        CREATE_PATH = f'ssh {"-i" if PRIVATE_KEY_PATH != "" else ""} {PRIVATE_KEY_PATH} -o StrictHostKeyChecking=no {USER}@{IP} -p {PORT} "mkdir -p {PATH}{client}/{org_name}"'
         subprocess.run(CREATE_PATH, shell=True, capture_output=True)
         LOGGER.debug(f"created {PATH}{client}/{org_name} in the server")
 
     # SEND FILES TO THE SERVER
-    
     filesAmt = len(os.listdir(TMP_DIR))
     LOGGER.debug(f"sending {filesAmt} files to cloud for client {client} to {IP}")
     DST = f'{USER}@{IP}:{PATH}{client}/{org_name}/' 
-    OPTIONS = f'-av {"--delete" if filesAmt > 0 else ""} -e "ssh -p {PORT} -i {PRIVATE_KEY_PATH} -o StrictHostKeyChecking=no"' # do not delete if no files being uploaded
+    OPTIONS = f'-av {"--delete" if filesAmt > 0 else ""} -e "ssh -p {PORT} {"-i" if PRIVATE_KEY_PATH != "" else ""} {PRIVATE_KEY_PATH} -o StrictHostKeyChecking=no"' # do not delete if no files being uploaded
     COMMAND = f'rsync {OPTIONS} {TMP_DIR}/ {DST} >> "{LOG_DIR}/rsync_$(date +%Y-%m-%d).log" 2>&1'
     LOGGER.debug("executing rsync")
     subprocess.run(COMMAND, shell=True, check=True)
 
+    # Remove tmp directory and rename output directory
     LOGGER.debug("setting tmp directory as output directory")
     shutil.rmtree(OUTPUT_DIR)
     os.rename(TMP_DIR, OUTPUT_DIR)
 
+    # Send logs to BI
     logtype="Success"
     lines = ""
     description = ""
