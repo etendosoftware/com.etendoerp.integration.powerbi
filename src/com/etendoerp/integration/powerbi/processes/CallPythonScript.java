@@ -115,6 +115,7 @@ public class CallPythonScript extends DalBaseProcess {
                 String path = "";
                 String bbddUser = "";
                 String bbddPassword = "";
+                String privateKeyPath = "";
 
                 for (BiExecutionVariables execVar : execVarList) {
                     switch (execVar.getVariable().toLowerCase()) {
@@ -139,12 +140,15 @@ public class CallPythonScript extends DalBaseProcess {
                         case "bbdd_password":
                             bbddPassword = execVar.getValue();
                             break;
+                        case "private-key-path":
+                            privateKeyPath = execVar.getValue();
+                            break;
                         default:
                             break;
                     }
                 }
 
-                if (StringUtils.isEmpty(clientStr) || StringUtils.isEmpty(user) || StringUtils.isEmpty(ip)) {
+                if (StringUtils.isEmpty(clientStr) || StringUtils.isEmpty(user) || StringUtils.isEmpty(ip)){
                     throw new OBException(OBMessageUtils.messageBD("ETPBIC_VariablesNotFoundError"));
                 }
 
@@ -164,6 +168,7 @@ public class CallPythonScript extends DalBaseProcess {
                 argsStr.append(path + ",");
                 argsStr.append(bbddUser + ",");
                 argsStr.append(bbddPassword + ",");
+                argsStr.append(privateKeyPath + ",");
 
                 log.debug("calling function to execute script");
                 callPythonScript(repoPath, dataDest.getScriptPath(), argsStr.toString());
@@ -252,11 +257,13 @@ public class CallPythonScript extends DalBaseProcess {
 
     public void callPythonScript(String repositoryPath, String scriptName, String argsStr) {
         // repositoryPath is supposed to be a directory
-        String concatFormat = "%s%s";
-        repositoryPath = repositoryPath.endsWith("/") ? repositoryPath : String.format(concatFormat, repositoryPath, "/");
-        scriptName = scriptName.endsWith(".py") ? scriptName : String.format(concatFormat, scriptName, ".py");
-        String partialScriptPath = String.format(concatFormat, repositoryPath, scriptName);
-        String finalScriptPath = getWebContentPath(partialScriptPath);
+        StringBuilder repoPath = new StringBuilder(repositoryPath);
+        StringBuilder scriptPath = new StringBuilder(scriptName);
+        StringBuilder partialScriptPath = new StringBuilder();
+        repoPath = repoPath.toString().endsWith("/") ? repoPath : repoPath.append("/");
+        scriptPath = scriptPath.toString().endsWith(".py") ? scriptPath : scriptPath.append(".py");
+        partialScriptPath.append(repoPath).append(scriptPath);
+        String finalScriptPath = getWebContentPath(partialScriptPath.toString());
 
         File file = new File(finalScriptPath);
         if (!file.exists()) {
@@ -265,7 +272,7 @@ public class CallPythonScript extends DalBaseProcess {
         try {
             ProcessBuilder pb = new ProcessBuilder("python3", finalScriptPath,
                     argsStr);
-            pb.directory(new File(getWebContentPath(repositoryPath)));
+            pb.directory(new File(getWebContentPath(repoPath.toString())));
             pb.redirectErrorStream(true);
             log.debug("executing python script: " + scriptName);
             pb.start();
