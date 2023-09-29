@@ -97,6 +97,8 @@ public class CallPythonScript extends DalBaseProcess {
             argsStr.append(whName + ",");
             argsStr.append(whToken + ",");
             argsStr.append(contextOrg.getName().replace(',', '_') + ",");
+            argsStr.append(config.getCSVSeparator() + ",");
+
 
             OBCriteria<BiDataDestination> dataDestCrit = OBDal.getInstance().createCriteria(BiDataDestination.class);
             dataDestCrit.add(Restrictions.eq(BiDataDestination.PROPERTY_BICONNECTION, config));

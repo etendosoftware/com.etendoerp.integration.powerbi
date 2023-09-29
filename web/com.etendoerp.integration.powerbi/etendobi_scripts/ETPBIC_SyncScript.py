@@ -21,14 +21,15 @@ AD_ORG_ID = args[5] # organization executing the process
 WEBHOOK_NAME = args[6]
 WEBHOOK_APIKEY = args[7]
 org_name = args[8] # organization name for creating folder
-client = args[9]
-USER = args[10]
-IP = args[11]
-PORT = args[12]
-PATH = args[13]
-BBDD_USER = args[14]
-BBDD_PASSWORD = args[15]
-PRIVATE_KEY_PATH = args[16]
+csv_separator = args[9]
+client = args[10]
+USER = args[11]
+IP = args[12]
+PORT = args[13]
+PATH = args[14]
+BBDD_USER = args[15]
+BBDD_PASSWORD = args[16]
+PRIVATE_KEY_PATH = args[17]
 CLIENT_PREFIX = client[:3]
 CLIENT_FILTER = 'ad_client_id as clientid'
 ORG_FILTER = 'ad_org_id as orgid'
@@ -139,7 +140,7 @@ try:
             if pk in df3:
                 df4 = pd.merge(df1, df3, how='left', on=[pk, pk])
                 LOGGER.debug("creating BASE_" + f'{name}.csv file')
-                df4.to_csv(os.path.join(TMP_DIR, 'BASE_' + f'{name}.csv'), index = False)
+                df4.to_csv(os.path.join(TMP_DIR, 'BASE_' + f'{name}.csv'), index = False, sep=csv_separator)
             else:
                 LOGGER.debug("pk not found")
 
@@ -148,14 +149,14 @@ try:
             if pk in df2:
                 df4 = pd.merge(df1, df2, how='left', on=[pk, pk])
                 LOGGER.debug("creating FULL_" + f'{name}.csv file')
-                df4.to_csv(os.path.join(TMP_DIR, 'FULL_' + f'{name}.csv'), index = False)
+                df4.to_csv(os.path.join(TMP_DIR, 'FULL_' + f'{name}.csv'), index = False, sep=csv_separator)
             else:
                 LOGGER.debug('pk not found')
         else:
             LOGGER.debug("custom query not found for original query " + f'\'{name}\'' + ".")
 
         PREFIX = CLIENT_PREFIX + "_" if (isetendobase == 'N') else "EBI_"
-        df1.to_csv(os.path.join(TMP_DIR, PREFIX + f'{name}.csv'), index = False)
+        df1.to_csv(os.path.join(TMP_DIR, PREFIX + f'{name}.csv'), index = False, sep=csv_separator)
         
     # Test server connection
     TEST_COMMAND = f'ssh {"-i" if PRIVATE_KEY_PATH != "" else ""} {PRIVATE_KEY_PATH} -o StrictHostKeyChecking=no {USER}@{IP} -p {PORT} "echo 1"'

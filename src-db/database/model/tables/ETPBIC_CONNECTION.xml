@@ -41,6 +41,10 @@
         <default/>
         <onCreateDefault/>
       </column>
+      <column name="CSV_SEPARATOR" primaryKey="false" required="true" type="VARCHAR" size="32" autoIncrement="false">
+        <default><![CDATA[,]]></default>
+        <onCreateDefault/>
+      </column>
       <foreign-key foreignTable="AD_CLIENT" name="ETPBIC_AD_CLIENT_FKEY">
         <reference local="AD_CLIENT_ID" foreign="AD_CLIENT_ID"/>
       </foreign-key>
