@@ -1,8 +1,7 @@
 package com.etendoerp.integration.powerbi.eventhandler;
 
-import com.etendoerp.integration.powerbi.data.BiConnection;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.etendoerp.integration.powerbi.data.BiExecutionVariables;
+import org.apache.commons.lang.StringUtils;
 import org.openbravo.base.model.Entity;
 import org.openbravo.base.model.ModelProvider;
 import org.openbravo.base.model.Property;
@@ -16,10 +15,12 @@ import org.openbravo.base.exception.OBException;
 import javax.enterprise.event.Observes;
 
 class DelimiterValidator extends EntityPersistenceEventObserver {
-    private static Entity[] entities = { ModelProvider.getInstance().getEntity(BiConnection.ENTITY_NAME) };
-    private static final Logger logger = LogManager.getLogger();
+    private static Entity[] entities = { ModelProvider.getInstance().getEntity(BiExecutionVariables.ENTITY_NAME) };
 
-    Property csvSeparatorProp = entities[0].getProperty(BiConnection.PROPERTY_CSVSEPARATOR);
+    private static final String CSV_SEPARATOR_VARIABLE_NAME = "csv_separator";
+
+    Property csvSeparatorValueProp = entities[0].getProperty(BiExecutionVariables.PROPERTY_VARIABLE);
+    Property csvSeparatorNameProp = entities[0].getProperty(BiExecutionVariables.PROPERTY_VALUE);
 
     @Override
     protected Entity[] getObservedEntities() {
@@ -30,19 +31,20 @@ class DelimiterValidator extends EntityPersistenceEventObserver {
         if (!isValidEvent(event)) {
             return;
         }
-        validateDelimiter(event, csvSeparatorProp);
+        validateDelimiter(event, csvSeparatorNameProp, csvSeparatorValueProp);
     }
 
     public void onSave(@Observes EntityNewEvent event) {
         if (!isValidEvent(event)) {
             return;
         }
-        validateDelimiter(event, csvSeparatorProp);
+        validateDelimiter(event, csvSeparatorNameProp, csvSeparatorValueProp);
     }
 
-    public void validateDelimiter(EntityPersistenceEvent event, Property prop) {
-        String csvSeparator = (String) event.getCurrentState(prop);
-        if (csvSeparator.length() != 1) {
+    public void validateDelimiter(EntityPersistenceEvent event, Property valueProp, Property nameProp) {
+        String csvSeparatorName = (String) event.getCurrentState(nameProp);
+        String csvSeparatorValue = (String) event.getCurrentState(valueProp);
+        if (StringUtils.equalsIgnoreCase(csvSeparatorName, CSV_SEPARATOR_VARIABLE_NAME) && csvSeparatorValue.length() != 1) {
             throw new OBException(OBMessageUtils.messageBD("ETPBIC_InvalidDelimiter"));
         }
     }

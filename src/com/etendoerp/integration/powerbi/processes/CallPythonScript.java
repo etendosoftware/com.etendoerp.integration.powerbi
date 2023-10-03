@@ -97,8 +97,6 @@ public class CallPythonScript extends DalBaseProcess {
             argsStr.append(whName + ",");
             argsStr.append(whToken + ",");
             argsStr.append(contextOrg.getName().replace(',', '_') + ",");
-            argsStr.append(config.getCSVSeparator() + ",");
-
 
             OBCriteria<BiDataDestination> dataDestCrit = OBDal.getInstance().createCriteria(BiDataDestination.class);
             dataDestCrit.add(Restrictions.eq(BiDataDestination.PROPERTY_BICONNECTION, config));
@@ -110,6 +108,7 @@ public class CallPythonScript extends DalBaseProcess {
                 OBCriteria<BiExecutionVariables> execVarCrit = OBDal.getInstance().createCriteria(BiExecutionVariables.class);
                 execVarCrit.add(Restrictions.eq(BiExecutionVariables.PROPERTY_BIDATADESTINATION, dataDest));
                 List<BiExecutionVariables> execVarList = execVarCrit.list();
+                String csvSeparator = "|";
                 String user = "";
                 String clientStr = "";
                 String ip = "";
@@ -145,6 +144,9 @@ public class CallPythonScript extends DalBaseProcess {
                         case "private-key-path":
                             privateKeyPath = execVar.getValue();
                             break;
+                        case "csv_separator":
+                            csvSeparator = execVar.getValue();
+                            break;
                         default:
                             break;
                     }
@@ -163,6 +165,7 @@ public class CallPythonScript extends DalBaseProcess {
                 port = resolveEmptyPort(port);
                 path = resolvePathDelimiter(path);
 
+                argsStr.append(csvSeparator + ",");
                 argsStr.append(clientStr.replace(',', '_') + ",");
                 argsStr.append(user + ",");
                 argsStr.append(ip + ",");
