@@ -31,8 +31,6 @@ import java.util.Properties;
 public class CallPythonScript extends DalBaseProcess {
 
     private static final Logger log = Logger.getLogger(CallPythonScript.class);
-    private static Client clientObj = OBContext.getOBContext().getCurrentClient();
-
 
     @Override
     protected void doExecute(ProcessBundle bundle) throws Exception {
@@ -69,6 +67,8 @@ public class CallPythonScript extends DalBaseProcess {
             DefinedwebhookToken dwt = dwa.getSmfwheDefinedwebhookToken();
 
             checkNull(dwt == null, "ETPBIC_NoWebhookTokenError");
+
+            Client clientObj = OBContext.getOBContext().getCurrentClient();
 
             String whName = dw.getName();
             String whToken = dwt.getAPIKey();
