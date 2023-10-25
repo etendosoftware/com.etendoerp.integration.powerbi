@@ -76,10 +76,6 @@ public class CallPythonScript extends DalBaseProcess {
             String repoPath = config.getRepositoryPath();
             Properties obProperties = OBPropertiesProvider.getInstance().getOpenbravoProperties();
 
-            checkContextUrlExists(obProperties.containsKey("context.url"), "ETPBIC_ContextUrlNotFound");
-
-            String url = obProperties.getProperty("context.url");
-
             String bbddSid = getBbddSid(obProperties);
 
             String bbddUrl = getBbddUrl(obProperties);
@@ -91,7 +87,6 @@ public class CallPythonScript extends DalBaseProcess {
             argsStr.append(bbddSid + ",");
             argsStr.append(bbddHost + ",");
             argsStr.append(bbddPort + ",");
-            argsStr.append(url + ",");
             argsStr.append(clientObj.getId() + ",");
             argsStr.append(contextOrg.getId() + ",");
             argsStr.append(whName + ",");
@@ -117,6 +112,7 @@ public class CallPythonScript extends DalBaseProcess {
                 String bbddUser = "";
                 String bbddPassword = "";
                 String privateKeyPath = "";
+                String url = "";
 
                 for (BiExecutionVariables execVar : execVarList) {
                     switch (execVar.getVariable().toLowerCase()) {
@@ -147,12 +143,15 @@ public class CallPythonScript extends DalBaseProcess {
                         case "csv_separator":
                             csvSeparator = execVar.getValue();
                             break;
+                        case "application_url":
+                            url = execVar.getValue();
+                            break;
                         default:
                             break;
                     }
                 }
 
-                if (StringUtils.isEmpty(clientStr) || StringUtils.isEmpty(user) || StringUtils.isEmpty(ip)){
+                if (StringUtils.isEmpty(clientStr) || StringUtils.isEmpty(user) || StringUtils.isEmpty(ip) || StringUtils.isEmpty(url)){
                     throw new OBException(OBMessageUtils.messageBD("ETPBIC_VariablesNotFoundError"));
                 }
 
@@ -174,6 +173,7 @@ public class CallPythonScript extends DalBaseProcess {
                 argsStr.append(bbddUser + ",");
                 argsStr.append(bbddPassword + ",");
                 argsStr.append(privateKeyPath + ",");
+                argsStr.append(url + ",");
 
                 log.debug("calling function to execute script");
                 callPythonScript(repoPath, dataDest.getScriptPath(), argsStr.toString());
@@ -228,12 +228,6 @@ public class CallPythonScript extends DalBaseProcess {
         return obProperties.containsKey("bbdd.readonly.sid")
                 ? obProperties.getProperty("bbdd.readonly.sid")
                 : obProperties.getProperty("bbdd.sid");
-    }
-
-    private static void checkContextUrlExists(boolean contextUrlExists, String contextUrlNotFoundMsg) {
-        if (!contextUrlExists) {
-            throw new OBException(OBMessageUtils.messageBD(contextUrlNotFoundMsg));
-        }
     }
 
     private static void checkNull(boolean isNull, String noWebhookErrorMsg) {
