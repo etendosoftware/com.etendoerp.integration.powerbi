@@ -15,12 +15,12 @@ args = argsStr.split(",")
 BBDD_SID = args[0]
 BBDD_HOST = args[1]
 BBDD_PORT = args[2]
-URL = args[3]
-AD_CLIENT_ID = args[4] # client executing the process
-AD_ORG_ID = args[5] # organization executing the process
-WEBHOOK_NAME = args[6]
-WEBHOOK_APIKEY = args[7]
-org_name = args[8] # organization name for creating folder
+AD_CLIENT_ID = args[3] # client executing the process
+AD_ORG_ID = args[4] # organization executing the process
+WEBHOOK_NAME = args[5]
+WEBHOOK_APIKEY = args[6]
+org_name = args[7] # organization name for creating folder
+csv_separator = args[8]
 client = args[9]
 USER = args[10]
 IP = args[11]
@@ -29,6 +29,7 @@ PATH = args[13]
 BBDD_USER = args[14]
 BBDD_PASSWORD = args[15]
 PRIVATE_KEY_PATH = args[16]
+URL = args[17]
 CLIENT_PREFIX = client[:3]
 CLIENT_FILTER = 'ad_client_id as clientid'
 ORG_FILTER = 'ad_org_id as orgid'
@@ -139,7 +140,7 @@ try:
             if pk in df3:
                 df4 = pd.merge(df1, df3, how='left', on=[pk, pk])
                 LOGGER.debug("creating BASE_" + f'{name}.csv file')
-                df4.to_csv(os.path.join(TMP_DIR, 'BASE_' + f'{name}.csv'), index = False)
+                df4.to_csv(os.path.join(TMP_DIR, 'BASE_' + f'{name}.csv'), index = False, sep=csv_separator)
             else:
                 LOGGER.debug("pk not found")
 
@@ -148,14 +149,14 @@ try:
             if pk in df2:
                 df4 = pd.merge(df1, df2, how='left', on=[pk, pk])
                 LOGGER.debug("creating FULL_" + f'{name}.csv file')
-                df4.to_csv(os.path.join(TMP_DIR, 'FULL_' + f'{name}.csv'), index = False)
+                df4.to_csv(os.path.join(TMP_DIR, 'FULL_' + f'{name}.csv'), index = False, sep=csv_separator)
             else:
                 LOGGER.debug('pk not found')
         else:
             LOGGER.debug("custom query not found for original query " + f'\'{name}\'' + ".")
 
         PREFIX = CLIENT_PREFIX + "_" if (isetendobase == 'N') else "EBI_"
-        df1.to_csv(os.path.join(TMP_DIR, PREFIX + f'{name}.csv'), index = False)
+        df1.to_csv(os.path.join(TMP_DIR, PREFIX + f'{name}.csv'), index = False, sep=csv_separator)
         
     # Test server connection
     TEST_COMMAND = f'ssh {"-i" if PRIVATE_KEY_PATH != "" else ""} {PRIVATE_KEY_PATH} -o StrictHostKeyChecking=no {USER}@{IP} -p {PORT} "echo 1"'
