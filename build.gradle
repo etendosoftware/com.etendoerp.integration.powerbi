@@ -7,7 +7,7 @@
 */
 
 group          = "com.etendoerp"
-version        = "1.2.0"
+version        = "1.3.0"
 description    = "PowerBI connector for Etendo"
 ext.artifact   = "integration.powerbi"
 ext.repository = "https://maven.pkg.github.com/etendosoftware/com.etendoerp.etendobi.extensions"
@@ -54,5 +54,5 @@ repositories {
 dependencies {
     implementation 'com.etendoerp:platform.extensions:1.14.0'
 
-    implementation('com.etendoerp.platform:etendo-core:[22.1.0,24.1.0)')
+    implementation('com.etendoerp.platform:etendo-core:[22.1.0,24.2.0)')
 }
