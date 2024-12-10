@@ -16,8 +16,6 @@ import static org.mockito.Mockito.when;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Properties;
 
 import javax.servlet.ServletContext;
@@ -60,7 +58,13 @@ import com.etendoerp.integration.powerbi.data.BiDataDestination;
 public class CallPythonScriptTest extends WeldBaseTest {
 
   private static final String DEFAULT_TEST_PATH = "/test/path";
+  private static final String RESOURCE_PATH = "path/to/something/";
+  private static final String NORMAL_URL = "normal-url";
 
+  /**
+   * Rule for handling expected exceptions in tests.
+   * Configures the expected exception type and message for validation during test execution.
+   */
   @Rule
   public ExpectedException thrown = ExpectedException.none();
 
@@ -206,7 +210,7 @@ public class CallPythonScriptTest extends WeldBaseTest {
   @Test
   public void testResolvePathDelimiterWithoutSlash() throws Exception {
     String result = (String) resolvePathDelimiterMethod.invoke(null, "path/to/something");
-    assertEquals("path/to/something/", result);
+    assertEquals(RESOURCE_PATH, result);
   }
 
   /**
@@ -217,8 +221,8 @@ public class CallPythonScriptTest extends WeldBaseTest {
    */
   @Test
   public void testResolvePathDelimiterWithSlash() throws Exception {
-    String result = (String) resolvePathDelimiterMethod.invoke(null, "path/to/something/");
-    assertEquals("path/to/something/", result);
+    String result = (String) resolvePathDelimiterMethod.invoke(null, RESOURCE_PATH);
+    assertEquals(RESOURCE_PATH, result);
   }
 
   /**
@@ -315,7 +319,7 @@ public class CallPythonScriptTest extends WeldBaseTest {
   public void testGetBbddUrlReadonlyExists() throws Exception {
     Properties props = new Properties();
     props.setProperty("bbdd.readonly.url", "readonly-url");
-    props.setProperty("bbdd.url", "normal-url");
+    props.setProperty("bbdd.url", NORMAL_URL);
 
     String result = (String) getBbddUrlMethod.invoke(null, props);
     assertEquals("readonly-url", result);
@@ -330,10 +334,10 @@ public class CallPythonScriptTest extends WeldBaseTest {
   @Test
   public void testGetBbddUrlNoReadonly() throws Exception {
     Properties props = new Properties();
-    props.setProperty("bbdd.url", "normal-url");
+    props.setProperty("bbdd.url", NORMAL_URL);
 
     String result = (String) getBbddUrlMethod.invoke(null, props);
-    assertEquals("normal-url", result);
+    assertEquals(NORMAL_URL, result);
   }
 
   /**
@@ -445,8 +449,6 @@ public class CallPythonScriptTest extends WeldBaseTest {
    */
   @Test
   public void testExecuteWithInvalidScriptPath() throws Exception {
-    List<BiDataDestination> dataDestList = Arrays.asList(biDataDestination);
-
     obMessageUtilsStatic.when(() -> OBMessageUtils.messageBD("ETPBIC_InvalidScriptPath"))
         .thenReturn("Invalid script path");
 

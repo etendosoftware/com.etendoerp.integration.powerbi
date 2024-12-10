@@ -49,6 +49,7 @@ public class FillLogWindowTest {
     public static final String DESCRIPTION = "description";
     public static final String TEST_ORG = "testOrg";
     public static final String INFO = "INFO";
+    public static final String LOG_CREATION_ERROR = "Log Creation Error";
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -105,7 +106,7 @@ public class FillLogWindowTest {
         mockedOBDal.when(OBDal::getInstance).thenReturn(mockDal);
         mockedOBContext.when(OBContext::getOBContext).thenReturn(mockContext);
         mockedOBProvider.when(OBProvider::getInstance).thenReturn(mockOBProvider);
-        mockedOBMessageUtils.when(() -> OBMessageUtils.messageBD(any())).thenReturn("Log Creation Error");
+        mockedOBMessageUtils.when(() -> OBMessageUtils.messageBD(any())).thenReturn(LOG_CREATION_ERROR);
 
         when(mockOBProvider.get(BiLog.class)).thenReturn(mockBiLog);
         when(mockContext.getCurrentClient()).thenReturn(mockClient);
@@ -178,12 +179,12 @@ public class FillLogWindowTest {
         parameters.put(DESCRIPTION, TEST_MESSAGE);
 
         when(mockDal.get(eq(Organization.class), eq(null))).thenReturn(null);
-        doThrow(new OBException("Log Creation Error"))
+        doThrow(new OBException(LOG_CREATION_ERROR))
             .when(mockDal)
             .save(any(BiLog.class));
 
         thrown.expect(OBException.class);
-        thrown.expectMessage("Log Creation Error");
+        thrown.expectMessage(LOG_CREATION_ERROR);
 
         fillLogWindow.get(parameters, responseVars);
     }

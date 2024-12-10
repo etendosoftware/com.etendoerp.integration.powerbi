@@ -40,6 +40,8 @@ import com.etendoerp.integration.powerbi.data.BiExecutionVariables;
 @RunWith(MockitoJUnitRunner.class)
 public class DelimiterValidatorTest {
 
+    private static final String CSV_SEPARATOR = "csv_separator";
+
     private DelimiterValidator delimiterValidator;
     private MockedStatic<ModelProvider> mockedModelProvider;
     private MockedStatic<OBMessageUtils> mockedOBMessageUtils;
@@ -95,6 +97,10 @@ public class DelimiterValidatorTest {
 
     }
 
+    /**
+     * Cleans up mocked resources after each test.
+     * Closes {@code mockedModelProvider} and {@code mockedOBMessageUtils} if initialized.
+     */
     @After
     public void tearDown() {
         if (mockedModelProvider != null) {
@@ -114,7 +120,7 @@ public class DelimiterValidatorTest {
     @Test
     public void testOnSaveValidDelimiterSuccess() {
         // Given
-        when(newEvent.getCurrentState(nameProperty)).thenReturn("csv_separator");
+        when(newEvent.getCurrentState(nameProperty)).thenReturn(CSV_SEPARATOR);
         when(newEvent.getCurrentState(valueProperty)).thenReturn(",");
 
         delimiterValidator.onSave(newEvent);
@@ -129,7 +135,7 @@ public class DelimiterValidatorTest {
      */
     @Test
     public void testOnUpdateValidDelimiterSuccess() {
-        when(updateEvent.getCurrentState(nameProperty)).thenReturn("csv_separator");
+        when(updateEvent.getCurrentState(nameProperty)).thenReturn(CSV_SEPARATOR);
         when(updateEvent.getCurrentState(valueProperty)).thenReturn(";");
 
         delimiterValidator.onUpdate(updateEvent);
@@ -147,7 +153,7 @@ public class DelimiterValidatorTest {
     @Test(expected = OBException.class)
     public void testOnSaveInvalidDelimiterLengthThrowsException() {
         // Given
-        when(newEvent.getCurrentState(valueProperty)).thenReturn("csv_separator");
+        when(newEvent.getCurrentState(valueProperty)).thenReturn(CSV_SEPARATOR);
         when(newEvent.getCurrentState(nameProperty)).thenReturn(",,");
 
         delimiterValidator.csvSeparatorValueProp = valueProperty;
@@ -167,7 +173,7 @@ public class DelimiterValidatorTest {
      */
     @Test(expected = OBException.class)
     public void testOnUpdateInvalidDelimiterLengthThrowsException() {
-        when(updateEvent.getCurrentState(valueProperty)).thenReturn("csv_separator");
+        when(updateEvent.getCurrentState(valueProperty)).thenReturn(CSV_SEPARATOR);
         when(updateEvent.getCurrentState(nameProperty)).thenReturn("tab");
 
         delimiterValidator.csvSeparatorValueProp = valueProperty;
@@ -215,7 +221,7 @@ public class DelimiterValidatorTest {
      */
     @Test
     public void testOnSaveCaseSensitivitySuccess() {
-        when(newEvent.getCurrentState(nameProperty)).thenReturn("CSV_SEPARATOR");
+        when(newEvent.getCurrentState(nameProperty)).thenReturn(CSV_SEPARATOR);
         when(newEvent.getCurrentState(valueProperty)).thenReturn(",");
 
         delimiterValidator.onSave(newEvent);
