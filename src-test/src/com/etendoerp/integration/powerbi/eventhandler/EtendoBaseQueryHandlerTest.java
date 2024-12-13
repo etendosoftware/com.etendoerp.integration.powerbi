@@ -25,7 +25,6 @@ import org.openbravo.base.model.ModelProvider;
 import org.openbravo.base.model.Property;
 import org.openbravo.client.kernel.event.EntityDeleteEvent;
 import org.openbravo.client.kernel.event.EntityNewEvent;
-import org.openbravo.client.kernel.event.EntityUpdateEvent;
 import org.openbravo.erpCommon.utility.OBMessageUtils;
 
 import com.etendoerp.integration.powerbi.data.BiQuery;
@@ -67,7 +66,8 @@ public class EtendoBaseQueryHandlerTest {
   /**
    * Sets up the test environment by mocking static classes and initializing required objects.
    *
-   * @throws Exception if any error occurs during setup.
+   * @throws Exception
+   *     if any error occurs during setup.
    */
   @Before
   public void setUp() throws Exception {
@@ -83,23 +83,16 @@ public class EtendoBaseQueryHandlerTest {
 
     handler = new TestableEtendoBaseQueryHandler(logger);
 
-    setEntitiesFieldUsingReflection(handler, new Entity[]{mockEntity});
-  }
-
-  /**
-   * Exception thrown when an error occurs while setting the entities field via reflection.
-   */
-  public class EntityReflectionException extends RuntimeException {
-    public EntityReflectionException(String message, Throwable cause) {
-      super(message, cause);
-    }
+    setEntitiesFieldUsingReflection(handler, new Entity[]{ mockEntity });
   }
 
   /**
    * Utility method to set the "entities" field of the handler using reflection.
    *
-   * @param handler the EtendoBaseQueryHandler instance.
-   * @param entities the entities array to set.
+   * @param handler
+   *     the EtendoBaseQueryHandler instance.
+   * @param entities
+   *     the entities array to set.
    */
   private void setEntitiesFieldUsingReflection(EtendoBaseQueryHandler handler, Entity[] entities) {
     try {
@@ -139,13 +132,7 @@ public class EtendoBaseQueryHandlerTest {
 
     verify(mockEntity, times(1)).getProperty(BiQuery.PROPERTY_QUERY);
     mockedQueryValidationUtil.verify(
-        () -> QueryValidationUtil.queryValidation(
-            eq(newEvent),
-            eq(queryProperty),
-            any(Logger.class)
-        ),
-        times(1)
-    );
+        () -> QueryValidationUtil.queryValidation(eq(newEvent), eq(queryProperty), any(Logger.class)), times(1));
   }
 
   /**
@@ -172,8 +159,8 @@ public class EtendoBaseQueryHandlerTest {
   public void testOnDeleteWithEtendoBaseQuery() {
     when(deleteEvent.getCurrentState(isEtendoBaseProperty)).thenReturn(true);
     mock(BiQuery.class);
-    mockedOBMessageUtils.when(() -> OBMessageUtils.parseTranslation(any()))
-        .thenReturn("Cannot delete Etendo base query");
+    mockedOBMessageUtils.when(() -> OBMessageUtils.parseTranslation(any())).thenReturn(
+        "Cannot delete Etendo base query");
 
     handler.onDelete(deleteEvent);
   }
@@ -196,7 +183,8 @@ public class EtendoBaseQueryHandlerTest {
     /**
      * Constructs a testable EtendoBaseQueryHandler instance.
      *
-     * @param logger the Logger instance to use.
+     * @param logger
+     *     the Logger instance to use.
      */
     public TestableEtendoBaseQueryHandler(Logger logger) {
     }
@@ -204,12 +192,22 @@ public class EtendoBaseQueryHandlerTest {
     /**
      * Overrides the isValidEvent method to always return true for testing purposes.
      *
-     * @param event the EntityPersistenceEvent to validate.
+     * @param event
+     *     the EntityPersistenceEvent to validate.
      * @return true, indicating the event is valid.
      */
     @Override
     protected boolean isValidEvent(org.openbravo.client.kernel.event.EntityPersistenceEvent event) {
       return true;
+    }
+  }
+
+  /**
+   * Exception thrown when an error occurs while setting the entities field via reflection.
+   */
+  public class EntityReflectionException extends RuntimeException {
+    public EntityReflectionException(String message, Throwable cause) {
+      super(message, cause);
     }
   }
 }
