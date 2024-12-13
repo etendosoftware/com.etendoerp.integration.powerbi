@@ -56,16 +56,13 @@ public class EtendoBaseQueryHandlerTest {
   private EntityNewEvent newEvent;
 
   @Mock
-  private EntityUpdateEvent updateEvent;
-
-  @Mock
   private Logger logger;
 
   private MockedStatic<ModelProvider> mockedModelProvider;
   private MockedStatic<OBMessageUtils> mockedOBMessageUtils;
   private MockedStatic<QueryValidationUtil> mockedQueryValidationUtil;
 
-  private testableetendobasequeryhandler handler;
+  private TestableEtendoBaseQueryHandler handler;
 
   /**
    * Sets up the test environment by mocking static classes and initializing required objects.
@@ -84,9 +81,18 @@ public class EtendoBaseQueryHandlerTest {
     when(mockEntity.getProperty(BiQuery.PROPERTY_ISETENDOBASE)).thenReturn(isEtendoBaseProperty);
     when(mockEntity.getProperty(BiQuery.PROPERTY_QUERY)).thenReturn(queryProperty);
 
-    handler = new testableetendobasequeryhandler(logger);
+    handler = new TestableEtendoBaseQueryHandler(logger);
 
     setEntitiesFieldUsingReflection(handler, new Entity[]{mockEntity});
+  }
+
+  /**
+   * Exception thrown when an error occurs while setting the entities field via reflection.
+   */
+  public class EntityReflectionException extends RuntimeException {
+    public EntityReflectionException(String message, Throwable cause) {
+      super(message, cause);
+    }
   }
 
   /**
@@ -101,7 +107,7 @@ public class EtendoBaseQueryHandlerTest {
       entitiesField.setAccessible(true);
       entitiesField.set(handler, entities);
     } catch (Exception e) {
-      throw new RuntimeException("Error setting entities field via reflection", e);
+      throw new EntityReflectionException("Error setting entities field via reflection", e);
     }
   }
 
@@ -185,14 +191,14 @@ public class EtendoBaseQueryHandlerTest {
   /**
    * Inner testable implementation of the EtendoBaseQueryHandler to override specific behavior for testing purposes.
    */
-  private static class testableetendobasequeryhandler extends EtendoBaseQueryHandler {
+  private static class TestableEtendoBaseQueryHandler extends EtendoBaseQueryHandler {
 
     /**
      * Constructs a testable EtendoBaseQueryHandler instance.
      *
      * @param logger the Logger instance to use.
      */
-    public testableetendobasequeryhandler(Logger logger) {
+    public TestableEtendoBaseQueryHandler(Logger logger) {
     }
 
     /**
