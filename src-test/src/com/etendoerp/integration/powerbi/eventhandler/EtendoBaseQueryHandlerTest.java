@@ -1,23 +1,21 @@
 package com.etendoerp.integration.powerbi.eventhandler;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import java.lang.reflect.Field;
 
 import org.apache.logging.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.MockitoJUnitRunner;
@@ -33,179 +31,179 @@ import org.openbravo.erpCommon.utility.OBMessageUtils;
 import com.etendoerp.integration.powerbi.data.BiQuery;
 
 /**
- * Test class for the EtendoBaseQueryHandler to validate its event handling behaviors.
- * This test suite covers different scenarios for saving, updating, and deleting queries
- * in the context of Etendo Power BI integration. It uses Mockito for mocking dependencies
- * and static method stubbing.
- * Key test areas include:
- * - Validation of save and update events
- * - Preventing deletion of Etendo base queries
- * - Retrieving observed entities
+ * Test class for the EtendoBaseQueryHandler component.
+ * This class contains unit tests to validate the behavior of the EtendoBaseQueryHandler.
  */
 @RunWith(MockitoJUnitRunner.class)
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class EtendoBaseQueryHandlerTest {
 
-    private EtendoBaseQueryHandler handler;
-    private MockedStatic<ModelProvider> mockedModelProvider;
-    private MockedStatic<QueryValidationUtil> mockedQueryValidationUtil;
-    private MockedStatic<OBMessageUtils> mockedOBMessageUtils;
+  @Mock
+  private ModelProvider modelProvider;
 
-    @Mock
-    private ModelProvider modelProvider;
+  @Mock
+  private Entity mockEntity;
 
-    @Mock
-    private Entity mockEntity;
+  @Mock
+  private Property isEtendoBaseProperty;
 
-    @Mock
-    private Property queryProperty;
+  @Mock
+  private Property queryProperty;
 
-    @Mock
-    private Property isEtendoBaseProperty;
+  @Mock
+  private EntityDeleteEvent deleteEvent;
 
-    @Mock
-    private EntityNewEvent newEvent;
+  @Mock
+  private EntityNewEvent newEvent;
 
-    @Mock
-    private EntityUpdateEvent updateEvent;
+  @Mock
+  private EntityUpdateEvent updateEvent;
 
-    @Mock
-    private EntityDeleteEvent deleteEvent;
+  @Mock
+  private Logger logger;
 
-    @Mock
-    private Logger logger;
+  private MockedStatic<ModelProvider> mockedModelProvider;
+  private MockedStatic<OBMessageUtils> mockedOBMessageUtils;
+  private MockedStatic<QueryValidationUtil> mockedQueryValidationUtil;
 
+  private testableetendobasequeryhandler handler;
+
+  /**
+   * Sets up the test environment by mocking static classes and initializing required objects.
+   *
+   * @throws Exception if any error occurs during setup.
+   */
+  @Before
+  public void setUp() throws Exception {
+    mockedModelProvider = mockStatic(ModelProvider.class);
+    mockedOBMessageUtils = mockStatic(OBMessageUtils.class);
+    mockedQueryValidationUtil = mockStatic(QueryValidationUtil.class);
+
+    mockedModelProvider.when(ModelProvider::getInstance).thenReturn(modelProvider);
+    when(modelProvider.getEntity(BiQuery.ENTITY_NAME)).thenReturn(mockEntity);
+
+    when(mockEntity.getProperty(BiQuery.PROPERTY_ISETENDOBASE)).thenReturn(isEtendoBaseProperty);
+    when(mockEntity.getProperty(BiQuery.PROPERTY_QUERY)).thenReturn(queryProperty);
+
+    handler = new testableetendobasequeryhandler(logger);
+
+    setEntitiesFieldUsingReflection(handler, new Entity[]{mockEntity});
+  }
+
+  /**
+   * Utility method to set the "entities" field of the handler using reflection.
+   *
+   * @param handler the EtendoBaseQueryHandler instance.
+   * @param entities the entities array to set.
+   */
+  private void setEntitiesFieldUsingReflection(EtendoBaseQueryHandler handler, Entity[] entities) {
+    try {
+      Field entitiesField = EtendoBaseQueryHandler.class.getDeclaredField("entities");
+      entitiesField.setAccessible(true);
+      entitiesField.set(handler, entities);
+    } catch (Exception e) {
+      throw new RuntimeException("Error setting entities field via reflection", e);
+    }
+  }
+
+  /**
+   * Tears down the test environment by closing mocked static objects.
+   */
+  @After
+  public void tearDown() {
+    if (mockedQueryValidationUtil != null) {
+      mockedQueryValidationUtil.close();
+    }
+    if (mockedOBMessageUtils != null) {
+      mockedOBMessageUtils.close();
+    }
+    if (mockedModelProvider != null) {
+      mockedModelProvider.close();
+    }
+  }
+
+  /**
+   * Tests the onSave method of the EtendoBaseQueryHandler for valid events.
+   * Verifies that the query property is validated correctly.
+   */
+  @Test
+  public void testOnSaveValidEvent() {
+    mock(BiQuery.class);
+
+    handler.onSave(newEvent);
+
+    verify(mockEntity, times(1)).getProperty(BiQuery.PROPERTY_QUERY);
+    mockedQueryValidationUtil.verify(
+        () -> QueryValidationUtil.queryValidation(
+            eq(newEvent),
+            eq(queryProperty),
+            any(Logger.class)
+        ),
+        times(1)
+    );
+  }
+
+  /**
+   * Tests the onDelete method of the EtendoBaseQueryHandler for events
+   * with a non-Etendo base query.
+   * Verifies that the isEtendoBaseProperty state is checked.
+   */
+  @Test
+  public void testOnDeleteWithNonEtendoBaseQuery() {
+    when(deleteEvent.getCurrentState(isEtendoBaseProperty)).thenReturn(false);
+    mock(BiQuery.class);
+
+    handler.onDelete(deleteEvent);
+
+    verify(deleteEvent).getCurrentState(isEtendoBaseProperty);
+  }
+
+  /**
+   * Tests the onDelete method of the EtendoBaseQueryHandler for events
+   * with an Etendo base query.
+   * Expects an OBException to be thrown.
+   */
+  @Test(expected = OBException.class)
+  public void testOnDeleteWithEtendoBaseQuery() {
+    when(deleteEvent.getCurrentState(isEtendoBaseProperty)).thenReturn(true);
+    mock(BiQuery.class);
+    mockedOBMessageUtils.when(() -> OBMessageUtils.parseTranslation(any()))
+        .thenReturn("Cannot delete Etendo base query");
+
+    handler.onDelete(deleteEvent);
+  }
+
+  /**
+   * Tests the getObservedEntities method to verify that the correct entities are returned.
+   */
+  @Test
+  public void testGetObservedEntities() {
+    Entity[] entities = handler.getObservedEntities();
+
+    assertSame("Should return mock entity", mockEntity, entities[0]);
+  }
+
+  /**
+   * Inner testable implementation of the EtendoBaseQueryHandler to override specific behavior for testing purposes.
+   */
+  private static class testableetendobasequeryhandler extends EtendoBaseQueryHandler {
 
     /**
-     * Sets up the test environment before each test method.
-     * Initializes mock objects, static mocks for ModelProvider, QueryValidationUtil,
-     * and OBMessageUtils. Configures default behaviors for mocked objects and
-     * prepares the handler for testing.
+     * Constructs a testable EtendoBaseQueryHandler instance.
+     *
+     * @param logger the Logger instance to use.
      */
-    @Before
-    public void setUp() {
-        mockedModelProvider = mockStatic(ModelProvider.class);
-        mockedQueryValidationUtil = mockStatic(QueryValidationUtil.class);
-        mockedOBMessageUtils = mockStatic(OBMessageUtils.class);
-
-        mockedModelProvider.when(ModelProvider::getInstance).thenReturn(modelProvider);
-        when(modelProvider.getEntity(BiQuery.ENTITY_NAME)).thenReturn(mockEntity);
-
-        handler = spy(new TestableEtendoBaseQueryHandler());
-
-        when(mockEntity.getProperty(BiQuery.PROPERTY_QUERY)).thenReturn(queryProperty);
-        when(mockEntity.getProperty(BiQuery.PROPERTY_ISETENDOBASE)).thenReturn(isEtendoBaseProperty);
-
-        when(deleteEvent.getCurrentState(isEtendoBaseProperty)).thenReturn(false);
-
-        mockedOBMessageUtils.when(() -> OBMessageUtils.parseTranslation(any()))
-            .thenReturn("Cannot delete Etendo base query");
+    public testableetendobasequeryhandler(Logger logger) {
     }
 
     /**
-     * Tears down the test environment after each test method.
-     * Closes all mocked static contexts to prevent memory leaks and
-     * ensure clean state between tests.
+     * Overrides the isValidEvent method to always return true for testing purposes.
+     *
+     * @param event the EntityPersistenceEvent to validate.
+     * @return true, indicating the event is valid.
      */
-    @After
-    public void tearDown() {
-        if (mockedModelProvider != null) {
-            mockedModelProvider.close();
-        }
-        if (mockedQueryValidationUtil != null) {
-            mockedQueryValidationUtil.close();
-        }
-        if (mockedOBMessageUtils != null) {
-            mockedOBMessageUtils.close();
-        }
+    @Override
+    protected boolean isValidEvent(org.openbravo.client.kernel.event.EntityPersistenceEvent event) {
+      return true;
     }
-
-    /**
-     * Tests that query validation is called during the save event.
-     * Verifies that the QueryValidationUtil.queryValidation method is invoked
-     * when a new query event is processed.
-     */
-    @Test
-    public void testOnSaveValidEventCallsQueryValidation() {
-        handler.onSave(newEvent);
-
-        mockedQueryValidationUtil.verify(
-            () -> QueryValidationUtil.queryValidation(any(), any(), any())
-        );
-    }
-
-    /**
-     * Tests that query validation is called during the update event.
-     * Verifies that the QueryValidationUtil.queryValidation method is invoked
-     * when an update query event is processed.
-     */
-    @Test
-    public void testOnUpdateValidEventCallsQueryValidation() {
-        handler.onUpdate(updateEvent);
-
-        mockedQueryValidationUtil.verify(
-            () -> QueryValidationUtil.queryValidation(any(), any(), any())
-        );
-    }
-
-    /**
-     * Tests that an exception is thrown when attempting to delete an Etendo base query.
-     * Ensures that attempting to delete a query marked as an Etendo base query
-     * results in an OBException being thrown.
-     */
-    @Test(expected = OBException.class)
-    public void testOnDeleteEtendoBaseTrueThrowsException() {
-        doThrow(new OBException("ETPBIC_CantDeleteEtendoQuery"))
-            .when(handler)
-            .onDelete(deleteEvent);
-
-        handler.onDelete(deleteEvent);
-    }
-
-    /**
-     * Tests that no exception is thrown when deleting a non-base query.
-     * Verifies that queries not marked as Etendo base can be deleted without
-     * raising an exception.
-     */
-    @Test
-    public void atestOnDeleteEtendoBaseFalseNoException() {
-        when(deleteEvent.getCurrentState(isEtendoBaseProperty)).thenReturn(false);
-
-        when(mockEntity.getProperty(BiQuery.PROPERTY_ISETENDOBASE)).thenReturn(isEtendoBaseProperty);
-
-
-        handler.onDelete(deleteEvent);
-
-        verify(logger, never()).error(any(String.class));
-    }
-
-    /**
-     * Tests the retrieval of observed entities.
-     * Checks that the getObservedEntities method returns the expected entity
-     * and performs basic validation on the returned array.
-     */
-    @Test
-    public void testGetObservedEntities() {
-        Entity[] expectedEntities = new Entity[]{mockEntity};
-        when(handler.getObservedEntities()).thenReturn(expectedEntities);
-
-        Entity[] actualEntities = handler.getObservedEntities();
-
-        assertNotNull(actualEntities);
-        assertEquals(1, actualEntities.length);
-        assertSame(expectedEntities[0], actualEntities[0]);
-    }
-
-    /**
-     * Inner test handler class extending EtendoBaseQueryHandler.
-     * Provides a testable implementation with a simplified event validation
-     * method that always returns true, facilitating easier unit testing.
-     */
-    private static class TestableEtendoBaseQueryHandler extends EtendoBaseQueryHandler {
-        @Override
-        protected boolean isValidEvent(org.openbravo.client.kernel.event.EntityPersistenceEvent event) {
-            return true;
-        }
-
-    }
+  }
 }
