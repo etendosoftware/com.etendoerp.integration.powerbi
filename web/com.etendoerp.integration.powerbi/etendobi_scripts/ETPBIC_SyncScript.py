@@ -221,6 +221,7 @@ try:
         'apikey': WEBHOOK_APIKEY,
         'description': description,
         'organization': AD_ORG_ID,
+        'client': AD_CLIENT_ID,
         'logtype': logtype,
         'rule': '649BBFA37BA74FA59AEBE7F28524B0C8'
     }
@@ -242,6 +243,7 @@ except psycopg2.Error as e:
         'apikey': WEBHOOK_APIKEY,
         'description': description,
         'organization': AD_ORG_ID,
+        'client': AD_CLIENT_ID,
         'logtype': logtype,
         'rule': '649BBFA37BA74FA59AEBE7F28524B0C8'
     }
@@ -261,6 +263,7 @@ except Exception as e:
         'apikey': WEBHOOK_APIKEY,
         'description': description,
         'organization': AD_ORG_ID,
+        'client': AD_CLIENT_ID,
         'logtype': logtype,
         'rule': '649BBFA37BA74FA59AEBE7F28524B0C8'
     }
