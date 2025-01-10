@@ -109,7 +109,6 @@ public class FillLogWindowTest {
         mockedOBMessageUtils.when(() -> OBMessageUtils.messageBD(any())).thenReturn(LOG_CREATION_ERROR);
 
         when(mockOBProvider.get(BiLog.class)).thenReturn(mockBiLog);
-        when(mockContext.getCurrentClient()).thenReturn(mockClient);
         when(mockDal.get(eq(Organization.class), eq(TEST_ORG))).thenReturn(mockOrganization);
     }
 
@@ -147,9 +146,13 @@ public class FillLogWindowTest {
     @Test
     public void testSuccessfulLogCreation() {
         // Prepare test data
+        String testClientId = "testClientId";
         parameters.put(ORGANIZATION, TEST_ORG);
+        parameters.put("client", testClientId);
         parameters.put(LOG_TYPE, INFO);
         parameters.put(DESCRIPTION, TEST_MESSAGE);
+
+        when(mockDal.get(eq(Client.class), eq(testClientId))).thenReturn(mockClient);
 
         // Execute
         fillLogWindow.get(parameters, responseVars);
@@ -157,7 +160,7 @@ public class FillLogWindowTest {
         // Verify
         verify(mockBiLog).setNewOBObject(true);
         verify(mockBiLog).setClient(mockClient);
-        verify(mockBiLog).setOrganization(mockOrganization);  // Now verifying with mockOrganization
+        verify(mockBiLog).setOrganization(mockOrganization);
         verify(mockBiLog).setLogType(INFO);
         verify(mockBiLog).setMessage(TEST_MESSAGE);
         verify(mockDal).save(mockBiLog);
@@ -206,6 +209,4 @@ public class FillLogWindowTest {
 
         verify(mockBiLog).setLogType("");
     }
-
-
 }
