@@ -1,7 +1,7 @@
 package com.etendoerp.integration.powerbi.eventhandler;
 
 import com.etendoerp.integration.powerbi.data.BiExecutionVariables;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.openbravo.base.model.Entity;
 import org.openbravo.base.model.ModelProvider;
 import org.openbravo.base.model.Property;
