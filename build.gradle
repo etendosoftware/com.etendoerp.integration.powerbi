@@ -7,7 +7,7 @@
 */
 
 group          = "com.etendoerp"
-version        = "1.6.1"
+version        = "1.7.0"
 description    = "PowerBI connector for Etendo"
 ext.artifact   = "integration.powerbi"
 ext.repository = "https://maven.pkg.github.com/etendosoftware/com.etendoerp.etendobi.extensions"
