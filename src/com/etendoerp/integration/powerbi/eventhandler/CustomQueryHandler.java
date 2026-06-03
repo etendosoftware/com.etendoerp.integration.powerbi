@@ -1,7 +1,7 @@
 package com.etendoerp.integration.powerbi.eventhandler;
 
 
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.event.Observes;
 
 import com.etendoerp.integration.powerbi.data.BiQueryCustom;
 import org.apache.logging.log4j.Logger;

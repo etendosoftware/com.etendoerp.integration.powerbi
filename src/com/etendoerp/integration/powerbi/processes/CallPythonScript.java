@@ -9,7 +9,7 @@ import com.etendoerp.webhookevents.data.DefinedwebhookAccess;
 import com.etendoerp.webhookevents.data.DefinedwebhookToken;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
-import org.hibernate.criterion.Restrictions;
+import org.openbravo.dal.service.Restrictions;
 import org.openbravo.base.exception.OBException;
 import org.openbravo.base.session.OBPropertiesProvider;
 import org.openbravo.dal.core.DalContextListener;
