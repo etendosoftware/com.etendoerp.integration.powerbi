@@ -12,7 +12,7 @@ import org.openbravo.client.kernel.event.EntityUpdateEvent;
 import org.openbravo.erpCommon.utility.OBMessageUtils;
 import org.openbravo.base.exception.OBException;
 
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.event.Observes;
 
 class DelimiterValidator extends EntityPersistenceEventObserver {
     private static Entity[] entities = { ModelProvider.getInstance().getEntity(BiExecutionVariables.ENTITY_NAME) };
